@@ -14,7 +14,4 @@ class MLP(nn.Module):
         """
         embeddings = self.encoder(x)
         logits = self.classifier(embeddings)
-        return {
-            'embeddings': embeddings,
-            'logits': logits
-        }
+        return logits, embeddings

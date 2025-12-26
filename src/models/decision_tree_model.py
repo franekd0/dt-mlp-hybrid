@@ -6,7 +6,7 @@ class DecisionTreeModel:
     A wrapper for the Decision Tree Classifier from scikit-learn.
     """
 
-    def __init__(self, max_depth=None, random_state=None):
+    def __init__(self, max_depth: int = None, random_state = None):
         self.model = DecisionTreeClassifier(
             max_depth=max_depth,
             random_state=random_state
