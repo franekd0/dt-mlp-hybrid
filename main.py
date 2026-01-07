@@ -1,72 +1,96 @@
 import time
-import numpy as np
 import torch
-
-from src.utils.data_utils import load_moons_dataset
-from src.models.mlp import MLP
+import torch.nn as nn
+import torch.optim as optim
+import numpy as np
+from src.utils.data_utils import load_moons_dataset, load_circles_dataset
 from src.models.decision_tree_model import DecisionTreeModel
-from src.utils.trainer import train_mlp, get_embeddings, evaluate_mlp
-from src.utils.visualization import plot_comparison
+from src.models.mlp import MLP
+from src.models.hybrid_model import HybridModel
+from src.utils.visualization import compare_models_viz
+
+
+def train_standalone_mlp(X, y, input_dim, hidden_dim, classes, epochs=200):
+    model = MLP(input_dim, hidden_dim, output_dim=2, num_layers=3, num_classes=classes)
+    optimizer = optim.Adam(model.parameters(), lr=0.01)
+    criterion = nn.CrossEntropyLoss()
+
+    X_t = torch.FloatTensor(X)
+    y_t = torch.LongTensor(y)
+
+    model.train()
+    for _ in range(epochs):
+        optimizer.zero_grad()
+        logits, _ = model(X_t)
+        loss = criterion(logits, y_t)
+        loss.backward()
+        optimizer.step()
+    return model
+
+
+def evaluate_standalone_mlp(model, X, y):
+    model.eval()
+    with torch.no_grad():
+        logits, _ = model(torch.FloatTensor(X))
+        preds = torch.argmax(logits, dim=1).numpy()
+    return (preds == y).mean()
 
 
 def main():
-    print("--- 1. Ładowanie Danych (Make Moons) ---")
-    X_train, X_val, X_test, y_train, y_val, y_test = load_moons_dataset(
-        noise=0.3,
-        n_samples=1000,
+    print("--- 1. Przygotowanie danych ---")
+    X_train, X_val, X_test, y_train, y_val, y_test = load_circles_dataset(
+        noise=0.2,
+        factor=0.5,
+        n_samples=1500,
         test_size=0.2,
         val_size=0.2,
         random_state=42
     )
 
-    INPUT_DIM = X_train.shape[1]
-    HIDDEN_DIM = 16
-    OUTPUT_DIM = 2
-    NUM_CLASSES = 2
-    NUM_LAYERS = 3
+    input_dim = X_train.shape[1]
 
-    print("\n--- 2. Trenowanie Baseline: Czyste Drzewo (na surowych danych) ---")
-    start_time = time.time()
-    tree_baseline = DecisionTreeModel(max_depth=5, random_state=42)
-    tree_baseline.fit(X_train, y_train)
-    tree_time = time.time() - start_time
+    print("\n--- 2. Trenowanie Drzewa Decyzyjnego (Baseline) ---")
+    start = time.time()
+    tree = DecisionTreeModel(max_depth=3, random_state=42)
+    tree.fit(X_train, y_train)
+    time_tree = time.time() - start
+    acc_tree = tree.score(X_test, y_test)
+    print(f"Drzewo -> Acc: {acc_tree:.4f} | Czas: {time_tree:.4f}s")
 
-    acc_tree = tree_baseline.score(X_test, y_test)
-    print(f"Drzewo (Baseline) Accuracy: {acc_tree:.4f} (Czas: {tree_time:.4f}s)")
+    print("\n--- 3. Trenowanie samego MLP ---")
+    start = time.time()
+    mlp = train_standalone_mlp(X_train, y_train, input_dim, hidden_dim=16, classes=2, epochs=300)
+    time_mlp = time.time() - start
+    acc_mlp = evaluate_standalone_mlp(mlp, X_test, y_test)
+    print(f"MLP    -> Acc: {acc_mlp:.4f} | Czas: {time_mlp:.4f}s")
 
-    print("\n--- 3. Trenowanie MLP (Encoder) ---")
-    mlp_model = MLP(INPUT_DIM, HIDDEN_DIM, OUTPUT_DIM, NUM_LAYERS, NUM_CLASSES)
+    print("\n--- 4. Trenowanie Hybrydy ---")
+    start = time.time()
+    hybrid = HybridModel(
+        input_dim=input_dim,
+        num_classes=2,
+        embedding_dim=2,
+        hidden_dim=16,
+        num_layers=3,
+        tree_max_depth=3,
+        epochs=300
+    )
+    hybrid.fit(X_train, y_train)
+    time_hybrid = time.time() - start
+    acc_hybrid = hybrid.score(X_test, y_test)
+    print(f"Hybryda -> Acc: {acc_hybrid:.4f} | Czas: {time_hybrid:.4f}s")
 
-    start_time = time.time()
-    train_mlp(mlp_model, X_train, y_train, epochs=300, lr=0.01)
-    mlp_time = time.time() - start_time
+    print("\n" + "=" * 50)
+    print(f"{'Model':<20} | {'Accuracy':<10} | {'Czas [s]':<10}")
+    print("-" * 50)
+    print(f"{'Drzewo (DT)':<20} | {acc_tree:.4f}     | {time_tree:.4f}")
+    print(f"{'Sieć (MLP)':<20} | {acc_mlp:.4f}     | {time_mlp:.4f}")
+    print(f"{'Hybryda (MLP+DT)':<20} | {acc_hybrid:.4f}     | {time_hybrid:.4f}")
+    print("=" * 50)
 
-    acc_mlp = evaluate_mlp(mlp_model, X_test, y_test)
-    print(f"Samo MLP Accuracy: {acc_mlp:.4f} (Czas: {mlp_time:.4f}s)")
-
-    print("\n--- 4. Budowanie Hybrydy (MLP Embeddings -> Drzewo) ---")
-
-    start_time = time.time()
-    X_train_emb = get_embeddings(mlp_model, X_train)
-    X_test_emb = get_embeddings(mlp_model, X_test)
-
-    hybrid_tree = DecisionTreeModel(max_depth=5, random_state=42)
-    hybrid_tree.fit(X_train_emb, y_train)
-    hybrid_time = (time.time() - start_time) + mlp_time  # Czas MLP + Czas Drzewa
-
-    acc_hybrid = hybrid_tree.score(X_test_emb, y_test)
-    print(f"Hybryda Accuracy: {acc_hybrid:.4f} (Łączny czas: {hybrid_time:.4f}s)")
-
-    print("\n" + "=" * 40)
-    print(f"{'Model':<20} | {'Acc':<10} | {'Czas [s]':<10}")
-    print("-" * 40)
-    print(f"{'Drzewo (Raw)':<20} | {acc_tree:.4f}     | {tree_time:.4f}")
-    print(f"{'MLP (Softmax)':<20} | {acc_mlp:.4f}     | {mlp_time:.4f}")
-    print(f"{'Hybryda (MLP+DT)':<20} | {acc_hybrid:.4f}     | {hybrid_time:.4f}")
-    print("=" * 40)
-
-    print("\nGenerowanie wykresów...")
-    plot_comparison(X_test, y_test, tree_baseline, X_test_emb, hybrid_tree)
+    # 6. Wizualizacja
+    print("\nGenerowanie wykresów porównawczych...")
+    compare_models_viz(X_test, y_test, tree, mlp, hybrid)
 
 
 if __name__ == "__main__":

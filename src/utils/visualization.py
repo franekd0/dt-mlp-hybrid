@@ -1,53 +1,88 @@
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.pyplot as plt
+import torch
 
 
-def plot_comparison(X, y, model_tree, X_emb, model_hybrid, title="Porównanie"):
+def plot_decision_boundary(model, X, y, ax, title="Decyzja", is_pytorch=False, is_hybrid=False):
     """
-    Rysuje wykresy:
-    1. Dane oryginalne
-    2. Przestrzeń embeddingów (jak MLP widzi dane)
-    3. Granice decyzyjne Hybrydy na embeddingach
+    Rysuje granice decyzyjne modelu na podanym wykresie (ax).
     """
-    plt.figure(figsize=(18, 5))
+    # Ustawienia siatki (grid) do tła
+    x_min, x_max = X[:, 0].min() - 0.5, X[:, 0].max() + 0.5
+    y_min, y_max = X[:, 1].min() - 0.5, X[:, 1].max() + 0.5
+    xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.05),
+                         np.arange(y_min, y_max, 0.05))
 
-    # 1. Oryginalne dane
-    plt.subplot(1, 3, 1)
-    plt.scatter(X[:, 0], X[:, 1], c=y, cmap='coolwarm', edgecolor='k', s=40)
-    plt.title("1. Oryginalne Dane (Wejście)")
-    plt.xlabel("Cecha 1")
-    plt.ylabel("Cecha 2")
+    # Przygotowanie danych do predykcji tła
+    mesh_data = np.c_[xx.ravel(), yy.ravel()]
 
-    # 2. Embeddingi (Wizualizacja przestrzeni latentnej)
-    # Uwaga: To zadziała najlepiej, jeśli embedding_dim=2. Jeśli więcej, używamy PCA/TSNE (tu uproszczone dla 2D)
-    plt.subplot(1, 3, 2)
-    if X_emb.shape[1] == 2:
-        plt.scatter(X_emb[:, 0], X_emb[:, 1], c=y, cmap='coolwarm', edgecolor='k', s=40)
-        plt.title("2. Embeddingi z MLP (Przestrzeń ukryta)")
-        plt.xlabel("Emb 1")
-        plt.ylabel("Emb 2")
+    # Logika predykcji zależna od typu modelu
+    if is_hybrid:
+        # Hybryda ma własną metodę predict
+        Z = model.predict(mesh_data)
+    elif is_pytorch:
+        # Pytorch wymaga tensorów i wyciągnięcia argmax
+        model.eval()
+        with torch.no_grad():
+            t_data = torch.FloatTensor(mesh_data)
+            logits, _ = model(t_data)
+            Z = torch.argmax(logits, dim=1).numpy()
     else:
-        plt.text(0.5, 0.5, "Embeddingi > 2D\n(użyj PCA do wizualizacji)",
-                 ha='center', va='center')
-        plt.title("2. Embeddingi z MLP")
+        # Scikit-learn (Drzewo)
+        Z = model.predict(mesh_data)
 
-    # 3. Granice decyzji Hybrydy (na embeddingach)
-    plt.subplot(1, 3, 3)
-    if X_emb.shape[1] == 2:
-        x_min, x_max = X_emb[:, 0].min() - 1, X_emb[:, 0].max() + 1
-        y_min, y_max = X_emb[:, 1].min() - 1, X_emb[:, 1].max() + 1
-        xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.1),
-                             np.arange(y_min, y_max, 0.1))
+    Z = Z.reshape(xx.shape)
 
-        Z = model_hybrid.predict(np.c_[xx.ravel(), yy.ravel()])
-        Z = Z.reshape(xx.shape)
+    # Rysowanie konturów i punktów
+    ax.contourf(xx, yy, Z, alpha=0.3, cmap='coolwarm')
+    ax.scatter(X[:, 0], X[:, 1], c=y, cmap='coolwarm', edgecolors='k', s=30)
+    ax.set_title(title)
+    ax.set_xlabel("Feature 1")
+    ax.set_ylabel("Feature 2")
 
-        plt.contourf(xx, yy, Z, alpha=0.3, cmap='coolwarm')
-        plt.scatter(X_emb[:, 0], X_emb[:, 1], c=y, cmap='coolwarm', edgecolor='k', s=40)
-        plt.title("3. Decyzja Drzewa na Embeddingach")
-    else:
-        plt.text(0.5, 0.5, "Wizualizacja granic\ndostępna dla emb_dim=2",
-                 ha='center', va='center')
+
+def plot_embeddings(hybrid_model, X, y, ax, title="Embeddingi MLP"):
+    """
+    Wizualizuje, jak MLP wewnątrz hybrydy 'widzi' dane przed przekazaniem ich do drzewa.
+    """
+    embeddings = hybrid_model.transform(X)
+
+    # Rysujemy punkty w przestrzeni embeddingów
+    ax.scatter(embeddings[:, 0], embeddings[:, 1], c=y, cmap='coolwarm', edgecolors='k', s=30)
+    ax.set_title(title)
+    ax.set_xlabel("Emb 1")
+    ax.set_ylabel("Emb 2")
+
+    # Opcjonalnie: Rysujemy, jak drzewo dzieli TĘ przestrzeń
+    # (To pokazuje, że dla drzewa problem stał się prostszy)
+    x_min, x_max = embeddings[:, 0].min() - 1, embeddings[:, 0].max() + 1
+    y_min, y_max = embeddings[:, 1].min() - 1, embeddings[:, 1].max() + 1
+    xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.05),
+                         np.arange(y_min, y_max, 0.05))
+
+    Z = hybrid_model.tree.predict(np.c_[xx.ravel(), yy.ravel()])
+    Z = Z.reshape(xx.shape)
+
+    ax.contourf(xx, yy, Z, alpha=0.1, cmap='Greys')  # Delikatne tło decyzji drzewa
+
+
+def compare_models_viz(X, y, tree_model, mlp_model, hybrid_model):
+    """
+    Tworzy jedno duże okno z 4 wykresami porównawczymi.
+    """
+    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+
+    # 1. Samo Drzewo (Oryginalna przestrzeń)
+    plot_decision_boundary(tree_model, X, y, axes[0, 0], title="1. Samo Drzewo (Baseline)")
+
+    # 2. Samo MLP (Oryginalna przestrzeń)
+    plot_decision_boundary(mlp_model, X, y, axes[0, 1], title="2. Samo MLP", is_pytorch=True)
+
+    # 3. Hybryda (Oryginalna przestrzeń - jak finalnie klasyfikuje)
+    plot_decision_boundary(hybrid_model, X, y, axes[1, 0], title="3. Hybryda (Całość)", is_hybrid=True)
+
+    # 4. Co widzi Hybryda? (Embedding space)
+    plot_embeddings(hybrid_model, X, y, axes[1, 1], title="4. Wnętrze Hybrydy (Embeddingi + Drzewo)")
 
     plt.tight_layout()
     plt.show()
