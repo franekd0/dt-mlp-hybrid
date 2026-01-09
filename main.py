@@ -11,7 +11,7 @@ from src.utils.visualization import compare_models_viz
 
 
 def train_standalone_mlp(X, y, input_dim, hidden_dim, classes, epochs=200):
-    model = MLP(input_dim, hidden_dim, output_dim=2, num_layers=3, num_classes=classes)
+    model = MLP(input_dim, hidden_dim, embedding_dim=2, num_layers=3, num_classes=classes)
     optimizer = optim.Adam(model.parameters(), lr=0.01)
     criterion = nn.CrossEntropyLoss()
 
@@ -37,6 +37,10 @@ def evaluate_standalone_mlp(model, X, y):
 
 
 def main():
+    torch.cuda.manual_seed_all(42)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
     print("--- 1. Przygotowanie danych ---")
     X_train, X_val, X_test, y_train, y_val, y_test = load_circles_dataset(
         noise=0.2,

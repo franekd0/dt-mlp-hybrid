@@ -86,7 +86,7 @@ class HybridModel:
         self.mlp = MLP(
             input_dim=self.input_dim,
             hidden_dim=self.hidden_dim,
-            output_dim=self.embedding_dim,
+            embedding_dim=self.embedding_dim,
             num_layers=self.num_layers,
             num_classes=self.num_classes
         )

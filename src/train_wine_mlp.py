@@ -36,7 +36,7 @@ def main():
     model = MLP(
         input_dim=input_dim,
         hidden_dim=128,
-        output_dim=64,
+        embedding_dim=64,
         num_layers=3,
         num_classes=num_classes
     )

@@ -64,7 +64,7 @@ class Experiment:
         self.model = MLP(
             input_dim=input_dim,
             hidden_dim=self.config["hidden_dim"],
-            output_dim=self.config["output_dim"],
+            embedding_dim=self.config["output_dim"],
             num_layers=self.config["num_layers"],
             num_classes=num_classes
         ).to(self.device)
