@@ -6,9 +6,6 @@ from src.models.hybrid_model import HybridModel
 from src.utils.visualization import compare_models_viz, print_results, print_table
 from src.training.mlp_training import train_mlp
 
-CONFIG = {
-    
-}
 
 def main():
 
@@ -40,7 +37,6 @@ def main():
     print_results(time_mlp, acc_mlp)
 
     print("\n--- 4. MLP + TREE hybrid ---")
-    start = time.time()
     hybrid = HybridModel(
         input_dim=input_dim,
         num_classes=2,
