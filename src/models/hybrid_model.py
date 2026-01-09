@@ -1,9 +1,13 @@
+from typing import Optional
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import numpy as np
 from src.models.mlp import MLP
 from src.models.decision_tree_model import DecisionTreeModel
+from src.training.mlp_training import train_mlp
+from src.utils.time_utils import timer
 
 
 class HybridModel:
@@ -36,54 +40,28 @@ class HybridModel:
         self.tree_max_depth = tree_max_depth
         self.random_state = random_state
 
-        self.mlp = None
-        self.tree = None
+        self.mlp : MLP | None = None
+        self.tree : DecisionTreeModel | None = None
         self.is_fitted = False
 
-    def _train_mlp_internal(self, X_train, y_train):
-        """
-        Prywatna metoda do trenowania wewnętrznej sieci MLP.
-        """
-        X_t = torch.FloatTensor(X_train)
-        y_t = torch.LongTensor(y_train)
-
-        criterion = nn.CrossEntropyLoss()
-        optimizer = optim.Adam(self.mlp.parameters(), lr=self.lr)
-
-        self.mlp.train()
-
-        for epoch in range(self.epochs):
-            optimizer.zero_grad()
-
-            logits, _ = self.mlp(X_t)
-
-            loss = criterion(logits, y_t)
-            loss.backward()
-            optimizer.step()
-
-            if (epoch + 1) % 50 == 0:
-                print(f"  [Hybrid Internal] MLP Epoch {epoch + 1}/{self.epochs} Loss: {loss.item():.4f}")
-
     def _get_embeddings(self, X):
-        """
-        Prywatna metoda wyciągająca embeddingi z MLP.
-        """
         self.mlp.eval()
-        X_t = torch.FloatTensor(X)
         with torch.no_grad():
+            X_t = torch.FloatTensor(X)
             _, embeddings = self.mlp(X_t)
-        return embeddings.numpy()
+        return embeddings.cpu().numpy()
 
+    @timer
     def fit(self, X, y):
         """
-        Główna metoda ucząca:
-        1. Inicjalizuje MLP.
-        2. Trenuje MLP na surowych danych.
-        3. Transformuje dane na embeddingi.
-        4. Trenuje Drzewo na embeddingach.
+        Main learning method:
+        1. Initialize MLP.
+        2. Train MLP with raw data.
+        3. Extracts embeddings.
+        4. Trains tree on extracted embeddings.
         """
 
-        self.mlp = MLP(
+        self.mlp : MLP = MLP(
             input_dim=self.input_dim,
             hidden_dim=self.hidden_dim,
             embedding_dim=self.embedding_dim,
@@ -91,12 +69,12 @@ class HybridModel:
             num_classes=self.num_classes
         )
 
-        print("-> Rozpoczynam trening wewnętrznego MLP...")
-        self._train_mlp_internal(X, y)
+        print("MLP training started...")
+        train_mlp(self.mlp, X, y, self.epochs, self.lr, debug=(True, 50))
 
         X_emb = self._get_embeddings(X)
 
-        print("-> Trenowanie Drzewa na embeddingach...")
+        print("Training tree with embeddings...")
         self.tree = DecisionTreeModel(
             max_depth=self.tree_max_depth,
             random_state=self.random_state
@@ -111,7 +89,7 @@ class HybridModel:
         Przewiduje klasy dla nowych danych.
         """
         if not self.is_fitted:
-            raise Exception("Model nie jest wytrenowany!")
+            raise Exception("Train model first")
 
         X_emb = self._get_embeddings(X)
         return self.tree.predict(X_emb)
@@ -121,15 +99,15 @@ class HybridModel:
         Zwraca dokładność (accuracy).
         """
         if not self.is_fitted:
-            raise Exception("Model nie jest wytrenowany!")
+            raise Exception("Train model first")
 
         X_emb = self._get_embeddings(X)
         return self.tree.score(X_emb, y)
 
     def transform(self, X):
         """
-        Zwraca same embeddingi (przydatne do wizualizacji).
+        Returns embeddings (for visualization).
         """
         if not self.is_fitted:
-            raise Exception("Model nie jest wytrenowany!")
+            raise Exception("Train model first")
         return self._get_embeddings(X)

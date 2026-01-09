@@ -2,6 +2,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 import torch
 
+def print_results(time, accuracy):
+    print(f"-> Accuracy: {time:.4f}\n-> Time: {accuracy:.4f}s")
+
+def print_table(labels, accuracies, times):
+    print("\n" + "=" * 50)
+    print(f"{'Model':<20} | {'Accuracy':<10} | {'Time [s]':<10}")
+    print("-" * 50)
+    for i in range(len(labels)):
+        print("{:<20} | {:.4f}     | {:.4f}".format(labels[i], accuracies[i], times[i]))
+    print("=" * 50)
 
 def plot_decision_boundary(model, X, y, ax, title="Decyzja", is_pytorch=False, is_hybrid=False):
     """

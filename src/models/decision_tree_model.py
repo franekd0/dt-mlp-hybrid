@@ -1,5 +1,7 @@
 from sklearn.tree import DecisionTreeClassifier
 
+from src.utils.time_utils import timer
+
 
 class DecisionTreeModel:
     """
@@ -12,6 +14,7 @@ class DecisionTreeModel:
             random_state=random_state
         )
 
+    @timer
     def fit(self, X, y):
         """
         Fit the Decision Tree model.
