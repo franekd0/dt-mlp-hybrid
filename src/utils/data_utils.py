@@ -100,7 +100,7 @@ def load_digits_dataset(
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Load digits dataset (8x8 images flattened to 64 features).
-    10 classes (cyfry 0-9).
+    10 classes (numbers 0-9).
     """
     data = load_digits()
     X = data.data

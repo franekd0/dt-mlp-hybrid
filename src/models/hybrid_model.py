@@ -12,8 +12,8 @@ from src.utils.time_utils import timer
 
 class HybridModel:
     """
-    Model hybrydowy: MLP (Encoder) + Drzewo Decyzyjne.
-    Cała logika treningu i ekstrakcji jest zamknięta wewnątrz tej klasy.
+    Hybrid model: MLP (Encoder) + Decision tree.
+    Training and extraction logic is included in this class.
     """
 
     def __init__(
@@ -62,7 +62,7 @@ class HybridModel:
         4. Trains tree on extracted embeddings.
         """
 
-        self.mlp : MLP = MLP(
+        self.mlp = MLP(
             input_dim=self.input_dim,
             hidden_dim=self.hidden_dim,
             embedding_dim=self.embedding_dim,
@@ -70,12 +70,10 @@ class HybridModel:
             num_classes=self.num_classes
         )
 
-        print("MLP training started...")
         train_mlp(self.mlp, X, y, self.epochs, self.lr)
 
         X_emb = self._get_embeddings(X)
 
-        print("Training tree with embeddings...")
         self.tree = DecisionTreeModel(
             max_depth=self.tree_max_depth,
             random_state=self.random_state

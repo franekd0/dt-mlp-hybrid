@@ -1,20 +1,24 @@
 from copy import deepcopy
 
-from src.models import MLP, HybridModel
+from src.models import MLP, HybridModel, DecisionTreeModel
 from src.training.mlp_training import train_mlp
 from src.experiments.dataset_factory import load_dataset
 from src.experiments.experiment_config import ExperimentConfig
-from src.models.tree_factory import create_tree
 from src.utils.time_utils import timer
 import numpy as np
+
+from src.utils.visualization_utils import compare_models_viz
 
 
 @timer
 def _run_tree(cfg, X_train, X_test, y_train, y_test):
-    tree = create_tree(cfg)
+    tree = DecisionTreeModel(
+        max_depth=cfg.tree_max_depth,
+        random_state=cfg.random_state
+    )
     tree.fit(X_train, y_train)
     acc = tree.score(X_test, y_test)
-    return acc
+    return acc, tree
 
 
 @timer
@@ -28,7 +32,7 @@ def _run_mlp(cfg, X_train, X_test, y_train, y_test):
     )
     train_mlp(mlp, X_train, y_train, cfg.epochs, cfg.lr)
     acc = mlp.score(X_test, y_test)
-    return acc
+    return acc, mlp
 
 
 @timer
@@ -46,16 +50,17 @@ def _run_hybrid(cfg, X_train, X_test, y_train, y_test):
     )
     hybrid.fit(X_train, y_train)
     acc = hybrid.score(X_test, y_test)
-    return acc
+    return acc, hybrid
 
 
-def _run_experiment(cfg: ExperimentConfig) -> dict:
+def _run_experiment(cfg: ExperimentConfig, do_plots) -> dict:
     X_train, X_val, X_test, y_train, y_val, y_test = load_dataset(cfg)
 
-    acc_tree, time_tree = _run_tree(cfg, X_train, X_test, y_train, y_test)
-    acc_mlp, time_mlp = _run_mlp(cfg, X_train, X_test, y_train, y_test)
-    acc_hybrid, time_hybrid = _run_hybrid(cfg, X_train, X_test, y_train, y_test)
+    (acc_tree, tree_model), time_tree = _run_tree(cfg, X_train, X_test, y_train, y_test)
+    (acc_mlp, mlp_model), time_mlp = _run_mlp(cfg, X_train, X_test, y_train, y_test)
+    (acc_hybrid, hybrid_model), time_hybrid = _run_hybrid(cfg, X_train, X_test, y_train, y_test)
 
+    if do_plots: compare_models_viz(X_test, y_test, tree_model, mlp_model, hybrid_model)
     return {
         "experiment": cfg.name,
         "dataset": cfg.dataset_name,
@@ -73,8 +78,8 @@ def _run_experiment(cfg: ExperimentConfig) -> dict:
         }
     }
 
-def run_experiment_avg(cfg: ExperimentConfig, n_runs: int = 10) -> dict:
 
+def run_experiment_avg(cfg: ExperimentConfig, n_runs: int = 10, do_plots: bool = False) -> dict:
     acc = {"tree": [], "mlp": [], "hybrid": []}
     time = {"tree": [], "mlp": [], "hybrid": []}
 
@@ -82,7 +87,7 @@ def run_experiment_avg(cfg: ExperimentConfig, n_runs: int = 10) -> dict:
         cfg_i = deepcopy(cfg)
         cfg_i.random_state = cfg.random_state + i
 
-        res = _run_experiment(cfg_i)
+        res = _run_experiment(cfg_i, do_plots)
 
         for model in ["tree", "mlp", "hybrid"]:
             acc[model].append(res[model]["accuracy"])

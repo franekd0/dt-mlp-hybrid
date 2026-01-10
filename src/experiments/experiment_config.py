@@ -24,7 +24,7 @@ class ExperimentConfig:
 
     # --- MLP ---
     embedding_dim: int = 2
-    hidden_dim: int = 16
+    hidden_dim: int = 8
     num_layers: int = 3
-    epochs: int = 200
+    epochs: int = 80
     lr: float = 0.005

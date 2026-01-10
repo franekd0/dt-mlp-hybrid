@@ -12,7 +12,7 @@ def main():
 
     for cfg in EXPERIMENTS:
         print(f"\nRunning experiment: {cfg.name}")
-        res = run_experiment_avg(cfg)
+        res = run_experiment_avg(cfg, n_runs=10, do_plots=False)
         results.append(res)
 
     labels = []

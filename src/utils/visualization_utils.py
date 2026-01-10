@@ -95,13 +95,13 @@ def compare_models_viz(X, y, tree_model, mlp_model, hybrid_model):
 
     add_class_legend(fig)
     # 1. Samo Drzewo (Oryginalna przestrzeń)
-    plot_decision_boundary(tree_model, X, y, axes[0, 0], title="1. Samo Drzewo (Baseline)")
+    plot_decision_boundary(tree_model, X, y, axes[0, 0], title="1. Tree only")
 
     # 2. Samo MLP (Oryginalna przestrzeń)
-    plot_decision_boundary(mlp_model, X, y, axes[0, 1], title="2. Samo MLP", is_pytorch=True)
+    plot_decision_boundary(mlp_model, X, y, axes[0, 1], title="2. MLP only", is_pytorch=True)
 
     # 3. Hybryda (Oryginalna przestrzeń - jak finalnie klasyfikuje)
-    plot_decision_boundary(hybrid_model, X, y, axes[1, 0], title="3. Hybryda (Całość)", is_hybrid=True)
+    plot_decision_boundary(hybrid_model, X, y, axes[1, 0], title="3. Hybrid", is_hybrid=True)
 
     # 4. Co widzi Hybryda? (Embedding space)
     plot_embeddings(hybrid_model, X, y, axes[1, 1], title="4. Wnętrze Hybrydy (Embeddingi + Drzewo)")
