@@ -14,7 +14,6 @@ class DecisionTreeModel:
             random_state=random_state
         )
 
-    @timer
     def fit(self, X, y):
         """
         Fit the Decision Tree model.

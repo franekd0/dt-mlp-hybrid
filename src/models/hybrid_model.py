@@ -28,12 +28,14 @@ class HybridModel:
             lr: float = 0.01,
             random_state: int = 42
     ):
+        #MLP
         self.input_dim = input_dim
         self.num_classes = num_classes
         self.embedding_dim = embedding_dim
         self.hidden_dim = hidden_dim
         self.num_layers = num_layers
 
+        # Training
         self.epochs = epochs
         self.lr = lr
 
@@ -51,7 +53,6 @@ class HybridModel:
             _, embeddings = self.mlp(X_t)
         return embeddings.cpu().numpy()
 
-    @timer
     def fit(self, X, y):
         """
         Main learning method:
@@ -70,7 +71,7 @@ class HybridModel:
         )
 
         print("MLP training started...")
-        train_mlp(self.mlp, X, y, self.epochs, self.lr, debug=(True, 50))
+        train_mlp(self.mlp, X, y, self.epochs, self.lr)
 
         X_emb = self._get_embeddings(X)
 
@@ -86,7 +87,7 @@ class HybridModel:
 
     def predict(self, X):
         """
-        Przewiduje klasy dla nowych danych.
+        Predicts classes.
         """
         if not self.is_fitted:
             raise Exception("Train model first")
@@ -96,7 +97,7 @@ class HybridModel:
 
     def score(self, X, y):
         """
-        Zwraca dokładność (accuracy).
+        Returns accuracy.
         """
         if not self.is_fitted:
             raise Exception("Train model first")

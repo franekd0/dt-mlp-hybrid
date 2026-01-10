@@ -1,17 +1,28 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
+from matplotlib.lines import Line2D
 
 def print_results(time, accuracy):
-    print(f"-> Accuracy: {time:.4f}\n-> Time: {accuracy:.4f}s")
+    print(f"-> Accuracy: {accuracy:.4f}\n-> Time: {time:.4f}s")
 
 def print_table(labels, accuracies, times):
-    print("\n" + "=" * 50)
-    print(f"{'Model':<20} | {'Accuracy':<10} | {'Time [s]':<10}")
-    print("-" * 50)
+    print("\n" + "=" * 110)
+    print(f"{'Model':<70} | {'Accuracy (mean ± std)':<22} | {'Time [s]':<10}")
+    print("-" * 110)
     for i in range(len(labels)):
-        print("{:<20} | {:.4f}     | {:.4f}".format(labels[i], accuracies[i], times[i]))
-    print("=" * 50)
+        print(f"{labels[i]:<70} | {accuracies[i]:<22} | {times[i]:<10}")
+    print("=" * 110)
+
+
+def add_class_legend(fig):
+    legend_elements = [
+        Line2D([0], [0], marker='o', color='w', label='Class 0',
+               markerfacecolor=plt.cm.coolwarm(0.1), markersize=8),
+        Line2D([0], [0], marker='o', color='w', label='Class 1',
+               markerfacecolor=plt.cm.coolwarm(0.9), markersize=8),
+    ]
+    fig.legend(handles=legend_elements, loc='upper center', ncol=2)
 
 def plot_decision_boundary(model, X, y, ax, title="Decyzja", is_pytorch=False, is_hybrid=False):
     """
@@ -82,6 +93,7 @@ def compare_models_viz(X, y, tree_model, mlp_model, hybrid_model):
     """
     fig, axes = plt.subplots(2, 2, figsize=(14, 10))
 
+    add_class_legend(fig)
     # 1. Samo Drzewo (Oryginalna przestrzeń)
     plot_decision_boundary(tree_model, X, y, axes[0, 0], title="1. Samo Drzewo (Baseline)")
 

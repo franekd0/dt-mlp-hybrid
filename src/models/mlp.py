@@ -1,7 +1,6 @@
 import torch.nn as nn
 import torch
-from src.models import MLPEncoder
-import numpy as np
+from src.models.mlp_encoder import MLPEncoder
 
 
 class MLP(nn.Module):
@@ -10,7 +9,7 @@ class MLP(nn.Module):
         self.encoder = MLPEncoder(input_dim, hidden_dim, embedding_dim, num_layers)
         self.classifier = nn.Linear(embedding_dim, num_classes)
 
-    # Methods eval() and train() and parameters() are inherited from nn.Module
+    # Methods eval(), train() and parameters() are inherited from nn.Module
 
     def forward(self, X):
         """

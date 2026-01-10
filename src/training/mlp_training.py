@@ -2,17 +2,15 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from src.utils.time_utils import timer
 
 
-@timer
 def train_mlp(
     model,
     X,
     y,
     epochs=200,
     lr=0.01,
-    debug : tuple[bool, int] = False,
+    debug : bool = False,
     ):
     """
     Generic training loop for MLP-like models.
@@ -21,7 +19,7 @@ def train_mlp(
     y_t = torch.LongTensor(y)
 
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=lr)
+    optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=1e-5)
 
     model.train()
 
@@ -34,5 +32,5 @@ def train_mlp(
         loss.backward()
         optimizer.step()
 
-        if debug[0] and (epoch + 1) % debug[1] == 0:
+        if debug and (epoch + 1) % 100 == 0:
             print(f"Epoch {epoch + 1}/{epochs} | Loss: {loss.item():.4f}")
