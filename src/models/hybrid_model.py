@@ -1,13 +1,8 @@
-from typing import Optional
-
 import torch
-import torch.nn as nn
-import torch.optim as optim
-import numpy as np
+
+from src.models.MLPTrainer import MLPTrainer
 from src.models.mlp import MLP
 from src.models.decision_tree_model import DecisionTreeModel
-from src.training.mlp_training import train_mlp
-from src.utils.time_utils import timer
 
 
 class HybridModel:
@@ -46,6 +41,15 @@ class HybridModel:
         self.tree : DecisionTreeModel | None = None
         self.is_fitted = False
 
+    def _set_mlp(self):
+        self.mlp = MLP(
+            input_dim=self.input_dim,
+            hidden_dim=self.hidden_dim,
+            embedding_dim=self.embedding_dim,
+            num_layers=self.num_layers,
+            num_classes=self.num_classes
+        )
+
     def _get_embeddings(self, X):
         self.mlp.eval()
         with torch.no_grad():
@@ -62,15 +66,10 @@ class HybridModel:
         4. Trains tree on extracted embeddings.
         """
 
-        self.mlp = MLP(
-            input_dim=self.input_dim,
-            hidden_dim=self.hidden_dim,
-            embedding_dim=self.embedding_dim,
-            num_layers=self.num_layers,
-            num_classes=self.num_classes
-        )
-
-        train_mlp(self.mlp, X, y, self.epochs, self.lr)
+        self._set_mlp()
+        trainer = MLPTrainer(self.lr, self.epochs)
+        trainer.set_model(self.mlp)
+        trainer.fit(X, y)
 
         X_emb = self._get_embeddings(X)
 

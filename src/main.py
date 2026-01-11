@@ -1,19 +1,60 @@
 from src.experiments.experiments_list import EXPERIMENTS
 from src.experiments.run_experiment import run_experiment_avg
-from src.utils.visualization_utils import print_table
+from src.utils.visualization_utils import (
+    print_table,
+    plot_accuracy_bar,
+    plot_accuracy_vs_time_all,
+    plot_accuracy_across_datasets
+)
 
 
 def main():
     results = []
 
-    print("=" * 60)
+    print("=" * 70)
     print("STARTING EXPERIMENTS")
-    print("=" * 60)
+    print("=" * 70)
 
     for cfg in EXPERIMENTS:
         print(f"\nRunning experiment: {cfg.name}")
-        res = run_experiment_avg(cfg, n_runs=10, do_plots=False)
+
+        res = run_experiment_avg(cfg, do_plots=False)
+
+        # -------------------------
+        # OVERFITTING CHECK
+        # -------------------------
+        tree = res["results"]["tree"]
+        hybrid = res["results"]["hybrid"]
+
+        tree_gap = tree["gap_mean"]
+        hybrid_gap = hybrid["gap_mean"]
+
+        tree_std = tree["gap_std"]
+        hybrid_std = hybrid["gap_std"]
+
+        delta = hybrid_gap - tree_gap
+        threshold = tree_std + hybrid_std
+
+        print("\n[Overfitting check]")
+        print(f"Tree   gap: {tree_gap:.4f} ± {tree_std:.4f}")
+        print(f"Hybrid gap: {hybrid_gap:.4f} ± {hybrid_std:.4f}")
+        print(f"Δgap (hyb − tree): {delta:.4f}")
+
+        if delta > threshold:
+            print("→ Hybrid overfits MORE than Tree")
+        elif delta < -threshold:
+            print("→ Tree overfits MORE than Hybrid")
+        else:
+            print("→ Difference small / within variability")
+
+
+        plot_accuracy_bar(res)
+
         results.append(res)
+
+    plot_accuracy_vs_time_all(results)
+    plot_accuracy_across_datasets(results)
+
 
     labels = []
     accuracies = []
@@ -23,8 +64,12 @@ def main():
         for model_name in ["tree", "mlp", "hybrid"]:
             m = r["results"][model_name]
             labels.append(f"{r['experiment']} | {model_name}")
-            accuracies.append(f"{m['acc_mean']:.4f} ± {m['acc_std']:.4f}")
-            times.append(f"{m['time_mean']:.3f}")
+            accuracies.append(
+                f"{m['acc_test_mean']:.4f} ± {m['acc_test_std']:.4f}"
+            )
+            times.append(
+                f"{m['time_mean']:.3f}"
+            )
 
     print_table(labels, accuracies, times)
 

@@ -8,23 +8,20 @@ class ExperimentConfig:
     name: str
     dataset_name: str
     random_state: int = 42
+    n_runs: int = 100
 
     # --- DATA ---
     test_size: float = 0.2
-    val_size: float = 0.2
+    val_size: float = 0.1
     n_samples: Optional[int] = None
-
-    # --- DATASET-SPECIFIC ---
-    noise: Optional[float] = None
-    factor: Optional[float] = None
 
     # --- TREE ---
     tree_type: str = "decision_tree"
-    tree_max_depth: int = 5
+    tree_max_depth: int = 6
 
     # --- MLP ---
-    embedding_dim: int = 2
+    embedding_dim: int = 6
     hidden_dim: int = 8
     num_layers: int = 3
-    epochs: int = 80
+    epochs: int = 40
     lr: float = 0.005

@@ -1,23 +1,50 @@
-from sklearn.datasets import make_moons, load_wine, make_circles, load_digits, load_breast_cancer
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
+from pathlib import Path
+from typing import Iterable, Tuple
+
 import numpy as np
+import pandas as pd
+from sklearn.datasets import load_wine, load_breast_cancer
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
 
 
-def _split_and_scale(
-        X: np.ndarray,
-        y: np.ndarray,
-        test_size: float,
-        val_size: float,
-        random_state: int
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+DATA_PATH = Path(__file__).parents[2].resolve() / "data"
+
+
+# ============================================================
+# CORE HELPER
+# ============================================================
+
+def split_and_preprocess(
+    df: pd.DataFrame,
+    target_col: str,
+    numerical_cols: Iterable[str],
+    categorical_cols: Iterable[str],
+    test_size: float,
+    val_size: float,
+    random_state: int,
+) -> Tuple[
+    np.ndarray, np.ndarray, np.ndarray,
+    np.ndarray, np.ndarray, np.ndarray
+]:
     """
-    Split data into train / validation / test sets and apply StandardScaler
-    fitted only on training data.
+    Unified split + preprocessing:
+    - one shared split
+    - scaler / encoder fit ONLY on train
+    - no data leakage
     """
 
+    # -------------------------
+    # TARGET
+    # -------------------------
+    y = df[target_col].values
+    X_df = df.drop(columns=[target_col])
+
+    # -------------------------
+    # SPLIT
+    # -------------------------
     X_train_val, X_test, y_train_val, y_test = train_test_split(
-        X,
+        X_df,
         y,
         test_size=test_size,
         random_state=random_state,
@@ -32,126 +59,148 @@ def _split_and_scale(
         stratify=y_train_val
     )
 
+    # -------------------------
+    # NUMERICAL
+    # -------------------------
     scaler = StandardScaler()
-    X_train = scaler.fit_transform(X_train)
-    X_val = scaler.transform(X_val)
-    X_test = scaler.transform(X_test)
+    X_train_num = scaler.fit_transform(X_train[numerical_cols])
+    X_val_num   = scaler.transform(X_val[numerical_cols])
+    X_test_num  = scaler.transform(X_test[numerical_cols])
 
-    return X_train, X_val, X_test, y_train, y_val, y_test
+    # -------------------------
+    # CATEGORICAL
+    # -------------------------
+    if categorical_cols:
+        encoder = OneHotEncoder(
+            sparse_output=False,
+            handle_unknown="ignore"
+        )
+        X_train_cat = encoder.fit_transform(X_train[categorical_cols])
+        X_val_cat   = encoder.transform(X_val[categorical_cols])
+        X_test_cat  = encoder.transform(X_test[categorical_cols])
+    else:
+        X_train_cat = np.empty((len(X_train), 0))
+        X_val_cat   = np.empty((len(X_val),   0))
+        X_test_cat  = np.empty((len(X_test),  0))
 
+    # -------------------------
+    # CONCAT
+    # -------------------------
+    X_train_final = np.hstack([X_train_num, X_train_cat])
+    X_val_final   = np.hstack([X_val_num,   X_val_cat])
+    X_test_final  = np.hstack([X_test_num,  X_test_cat])
 
-def load_moons_dataset(
-        noise: float,
-        test_size: float,
-        val_size: float,
-        n_samples: int,
-        random_state: int = 42
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """
-    Load make_moons dataset.
-    """
-    X, y = make_moons(
-        n_samples=n_samples,
-        noise=noise,
-        random_state=random_state
+    return (
+        X_train_final,
+        X_val_final,
+        X_test_final,
+        y_train,
+        y_val,
+        y_test
     )
 
-    return _split_and_scale(
-        X=X,
-        y=y,
+
+# ============================================================
+# DATASET LOADERS
+# ============================================================
+
+def load_wine_dataset(test_size: float, val_size: float, random_state: int = 42):
+    """
+    Wine dataset (all numerical).
+    """
+    data = load_wine(as_frame=True)
+    df = data.frame  # target already included
+
+    return split_and_preprocess(
+        df=df,
+        target_col="target",
+        numerical_cols=data.feature_names,
+        categorical_cols=[],
         test_size=test_size,
         val_size=val_size,
         random_state=random_state
     )
 
 
-def load_circles_dataset(
-        noise: float,
-        test_size: float,
-        val_size: float,
-        n_samples: int,
-        random_state: int = 42,
-        factor: float = 0.5
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+def load_cancer_dataset(test_size: float, val_size: float, random_state: int = 42):
     """
-    Load make_circles dataset (Okręgi wpisane w siebie).
-    To jest 'Killer' dla zwykłego drzewa decyzyjnego.
+    Breast Cancer Wisconsin dataset (all numerical).
     """
-    X, y = make_circles(
-        n_samples=n_samples,
-        noise=noise,
-        factor=factor,
-        random_state=random_state
-    )
+    data = load_breast_cancer(as_frame=True)
+    df = data.frame  # target already included
 
-    return _split_and_scale(
-        X=X,
-        y=y,
+    return split_and_preprocess(
+        df=df,
+        target_col="target",
+        numerical_cols=data.feature_names,
+        categorical_cols=[],
         test_size=test_size,
         val_size=val_size,
         random_state=random_state
     )
 
 
-def load_digits_dataset(
-        test_size: float,
-        val_size: float,
-        random_state: int = 42
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+def load_adult_dataset(test_size: float, val_size: float, random_state: int = 42):
     """
-    Load digits dataset (8x8 images flattened to 64 features).
-    10 classes (numbers 0-9).
+    Adult Income dataset (mixed).
     """
-    data = load_digits()
-    X = data.data
-    y = data.target
+    df = pd.read_csv(DATA_PATH / "adult.csv", skipinitialspace=True)
+    df.replace("?", np.nan, inplace=True)
+    df.dropna(inplace=True)
 
-    return _split_and_scale(
-        X=X,
-        y=y,
+    df["income"] = (df["income"] == ">50K").astype(int)
+
+    numerical_cols = [
+        "age",
+        "capital-gain", "capital-loss", "hours-per-week"
+    ]
+
+    categorical_cols = [
+        "workclass", "education", "marital-status",
+        "occupation", "relationship", "race", "gender",
+        "native-country"
+    ]
+
+    return split_and_preprocess(
+        df=df,
+        target_col="income",
+        numerical_cols=numerical_cols,
+        categorical_cols=categorical_cols,
         test_size=test_size,
         val_size=val_size,
         random_state=random_state
     )
 
 
-def load_cancer_dataset(
-        test_size: float,
-        val_size: float,
-        random_state: int = 42
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+def load_heart_statlog_dataset(test_size: float, val_size: float, random_state: int = 42):
     """
-    Load Breast Cancer Wisconsin dataset (30 features).
-    Binary classification.
+    Statlog Heart Disease dataset (mixed).
     """
-    data = load_breast_cancer()
-    X = data.data
-    y = data.target
+    df = pd.read_csv(DATA_PATH / "heart.dat", header=None, sep=r"\s+")
+    df.columns = [
+        "age", "sex", "chest_pain", "rest_bp", "serum_chol",
+        "fasting_blood_sugar", "electrocardiographic",
+        "max_heart_rate", "angina", "oldpeak",
+        "slope", "major_vessels", "thal", "target"
+    ]
 
-    return _split_and_scale(
-        X=X,
-        y=y,
-        test_size=test_size,
-        val_size=val_size,
-        random_state=random_state
-    )
+    df["target"] = (df["target"] == 1).astype(int)
 
+    numerical_cols = [
+        "age", "rest_bp", "serum_chol",
+        "max_heart_rate", "oldpeak", "major_vessels"
+    ]
 
-def load_wine_dataset(
-        test_size: float,
-        val_size: float,
-        random_state: int = 42
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """
-    Load the wine dataset.
-    """
-    data = load_wine()
-    X = data.data
-    y = data.target
+    categorical_cols = [
+        "sex", "chest_pain", "fasting_blood_sugar",
+        "electrocardiographic", "angina", "slope", "thal"
+    ]
 
-    return _split_and_scale(
-        X=X,
-        y=y,
+    return split_and_preprocess(
+        df=df,
+        target_col="target",
+        numerical_cols=numerical_cols,
+        categorical_cols=categorical_cols,
         test_size=test_size,
         val_size=val_size,
         random_state=random_state

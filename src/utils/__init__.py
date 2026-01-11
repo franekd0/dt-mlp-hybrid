@@ -1,13 +1,8 @@
 from .data_utils import (
-    load_moons_dataset,
     load_wine_dataset,
     load_cancer_dataset,
-    load_digits_dataset,
-    load_circles_dataset,
-)
-
-from .evaluation_utils import (
-    score
+    load_adult_dataset,
+    load_heart_statlog_dataset
 )
 
 from .time_utils import (
@@ -15,11 +10,9 @@ from .time_utils import (
 )
 
 __all__ = [
-    "load_moons_dataset",
     "load_wine_dataset",
     "load_cancer_dataset",
-    "load_digits_dataset",
-    "load_circles_dataset",
-    "score",
+    "load_adult_dataset",
+    "load_heart_statlog_dataset",
     "timer"
 ]
