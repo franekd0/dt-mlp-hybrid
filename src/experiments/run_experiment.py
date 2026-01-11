@@ -30,29 +30,27 @@ def run_single_experiment(cfg, do_plots=False):
 
     models = {
         "tree": DecisionTreeModel(
-            max_depth=cfg.tree_max_depth,
-            random_state=cfg.random_state
+            max_depth=cfg.tree.max_depth,
         ),
         "mlp": MLPTrainer(
             input_dim=X_train.shape[1],
-            hidden_dim=cfg.hidden_dim,
-            embedding_dim=cfg.embedding_dim,
-            num_layers=cfg.num_layers,
+            hidden_dim=cfg.mlp.hidden_dim,
+            embedding_dim=cfg.mlp.embedding_dim,
+            num_layers=cfg.mlp.num_layers,
             num_classes=len(set(y_train)),
-            lr=cfg.lr,
-            epochs=cfg.epochs
+            lr=cfg.mlp.lr,
+            epochs=cfg.mlp.epochs
 
         ),
         "hybrid": HybridModel(
             input_dim=X_train.shape[1],
             num_classes=len(set(y_train)),
-            embedding_dim=cfg.embedding_dim,
-            hidden_dim=cfg.hidden_dim,
-            num_layers=cfg.num_layers,
-            tree_max_depth=cfg.tree_max_depth,
-            epochs=cfg.epochs,
-            lr=cfg.lr,
-            random_state=cfg.random_state
+            embedding_dim=cfg.hybrid.embedding_dim,
+            hidden_dim=cfg.hybrid.hidden_dim,
+            num_layers=cfg.hybrid.num_layers,
+            tree_max_depth=cfg.hybrid.tree_max_depth,
+            epochs=cfg.hybrid.epochs,
+            lr=cfg.hybrid.lr,
         )
     }
 

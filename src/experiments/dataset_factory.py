@@ -38,4 +38,12 @@ def load_dataset(cfg: ExperimentConfig):
             random_state=cfg.random_state
         )
 
+    if cfg.dataset_name == "adult":
+        return load_adult_dataset(
+            test_size=cfg.test_size,
+            val_size=cfg.val_size,
+            random_state=cfg.random_state
+        )
+
+
     raise ValueError(f"Unknown dataset: {cfg.dataset_name}")

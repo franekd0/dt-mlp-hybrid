@@ -1,27 +1,42 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
+
+@dataclass
+class TreeConfig:
+    max_depth: int = 8
+
+@dataclass
+class MLPConfig:
+    embedding_dim: int = 16
+    hidden_dim: int = 32
+    num_layers: int = 2
+    epochs: int = 50
+    lr: float = 0.002
 
 
 @dataclass
+class HybridConfig:
+    embedding_dim: int = 16
+    hidden_dim: int = 32
+    num_layers: int = 2
+    tree_max_depth: int = 5
+    epochs: int = 50
+    lr: float = 0.002
+
+@dataclass
 class ExperimentConfig:
-    # --- META ---
     name: str
     dataset_name: str
     random_state: int = 42
     n_runs: int = 100
 
-    # --- DATA ---
     test_size: float = 0.2
-    val_size: float = 0.1
+    val_size: float = 0.2
     n_samples: Optional[int] = None
 
-    # --- TREE ---
-    tree_type: str = "decision_tree"
-    tree_max_depth: int = 6
+    noise: Optional[float] = None
+    factor: Optional[float] = None
 
-    # --- MLP ---
-    embedding_dim: int = 6
-    hidden_dim: int = 8
-    num_layers: int = 3
-    epochs: int = 40
-    lr: float = 0.005
+    tree: TreeConfig = field(default_factory=TreeConfig)
+    mlp: MLPConfig = field(default_factory=MLPConfig)
+    hybrid: HybridConfig = field(default_factory=HybridConfig)
