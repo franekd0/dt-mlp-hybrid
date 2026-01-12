@@ -5,13 +5,14 @@ from src.utils.visualization_utils import (
     plot_accuracy_bar,
     plot_accuracy_vs_time_all,
     plot_accuracy_across_datasets,
-    plot_experiments_loss
+    plot_experiments_loss,
+    plot_train_test_comparison
 )
 
 
 def main():
     results = []
-    loss_data = {}
+    all_loss_data = {}
 
     print("=" * 70)
     print("STARTING EXPERIMENTS")
@@ -22,8 +23,8 @@ def main():
 
         res = run_experiment_avg(cfg)
 
-        if "loss_history" in res:
-            loss_data[cfg.name] = res["loss_history"]
+        if "loss_data" in res:
+            all_loss_data[cfg.name] = res["loss_data"]
 
         tree = res["results"]["tree"]
         hybrid = res["results"]["hybrid"]
@@ -50,11 +51,12 @@ def main():
             print("→ Difference small / within variability")
 
         plot_accuracy_bar(res)
+        plot_train_test_comparison(res)
 
         results.append(res)
 
-    print("\nPlotting Loss Curves...")
-    plot_experiments_loss(loss_data)
+    print("\nPlotting Loss Comparison (MLP vs Hybrid)...")
+    plot_experiments_loss(all_loss_data)
 
     plot_accuracy_vs_time_all(results)
     plot_accuracy_across_datasets(results)

@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import torch
 from matplotlib.lines import Line2D
 
+
 def print_results(time, accuracy):
     print(f"-> Accuracy: {accuracy:.4f}\n-> Time: {time:.4f}s")
 
@@ -14,7 +15,6 @@ def print_table(labels, accuracies, times):
     for i in range(len(labels)):
         print(f"{labels[i]:<70} | {accuracies[i]:<22} | {times[i]:<10}")
     print("=" * 110)
-
 
 
 def add_class_legend(fig):
@@ -79,11 +79,8 @@ def compare_models_viz(X, y, tree_model, mlp_model, hybrid_model):
 
     add_class_legend(fig)
     plot_decision_boundary(tree_model, X, y, axes[0, 0], title="1. Tree only")
-
     plot_decision_boundary(mlp_model, X, y, axes[0, 1], title="2. MLP only", is_pytorch=True)
-
     plot_decision_boundary(hybrid_model, X, y, axes[1, 0], title="3. Hybrid", is_hybrid=True)
-
     plot_embeddings(hybrid_model, X, y, axes[1, 1], title="4. Wnętrze Hybrydy (Embeddingi + Drzewo)")
 
     plt.tight_layout()
@@ -101,6 +98,38 @@ def plot_accuracy_bar(summary: dict):
     plt.ylabel("Accuracy")
     plt.title(summary["experiment"])
     plt.grid(axis="y", linestyle="--", alpha=0.5)
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_train_test_comparison(summary: dict):
+    dataset_name = summary["experiment"]
+    models = ["tree", "mlp", "hybrid"]
+
+    test_means = [summary["results"][m]["acc_test_mean"] for m in models]
+    test_stds = [summary["results"][m]["acc_test_std"] for m in models]
+
+    train_means = [summary["results"][m]["acc_train_mean"] for m in models]
+    train_stds = [summary["results"][m]["acc_train_std"] for m in models]
+
+    x = np.arange(len(models))
+    width = 0.35
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+
+    rects1 = ax.bar(x - width / 2, train_means, width, yerr=train_stds, label='Train',
+                    capsize=5, color='skyblue', edgecolor='black', alpha=0.8)
+    rects2 = ax.bar(x + width / 2, test_means, width, yerr=test_stds, label='Test',
+                    capsize=5, color='salmon', edgecolor='black', alpha=0.8)
+
+    ax.set_ylabel('Accuracy')
+    ax.set_title(f'Train vs Test Accuracy: {dataset_name}')
+    ax.set_xticks(x)
+    ax.set_xticklabels(models)
+    ax.legend(loc='lower right')
+    ax.grid(axis='y', linestyle='--', alpha=0.4)
+    ax.set_ylim(0, 1.05)
+
     plt.tight_layout()
     plt.show()
 
@@ -145,21 +174,26 @@ def plot_accuracy_across_datasets(summaries):
     plt.show()
 
 
-def plot_experiments_loss(loss_data: dict):
-    plt.figure(figsize=(10, 6))
+def plot_experiments_loss(all_experiments_loss: dict):
+    plt.figure(figsize=(12, 7))
 
-    colors = plt.cm.viridis(np.linspace(0, 0.9, len(loss_data)))
+    colors = plt.cm.tab10(np.linspace(0, 1, len(all_experiments_loss)))
 
-    for idx, (exp_name, history) in enumerate(loss_data.items()):
-        if not history:
-            print(f"Warning: Empty loss history for {exp_name}")
-            continue
-        plt.plot(history, label=exp_name, color=colors[idx], linewidth=2)
+    for idx, (exp_name, losses) in enumerate(all_experiments_loss.items()):
+        color = colors[idx]
 
-    plt.title("Porównanie krzywych uczenia (MLP Encoder Loss)", fontsize=14)
-    plt.xlabel("Epoki", fontsize=12)
+        if "mlp" in losses and losses["mlp"]:
+            plt.plot(losses["mlp"], label=f"{exp_name} | MLP",
+                     color=color, linestyle="-", linewidth=2, alpha=0.9)
+
+        if "hybrid" in losses and losses["hybrid"]:
+            plt.plot(losses["hybrid"], label=f"{exp_name} | Hybrid (Encoder)",
+                     color=color, linestyle="--", linewidth=2, alpha=0.9)
+
+    plt.title("Loss Comparison: Standalone MLP vs Hybrid Internal MLP", fontsize=14)
+    plt.xlabel("Epochs", fontsize=12)
     plt.ylabel("Loss (CrossEntropy)", fontsize=12)
-    plt.legend()
-    plt.grid(True, linestyle='--', alpha=0.5)
+    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
+    plt.grid(True, linestyle='--', alpha=0.3)
     plt.tight_layout()
     plt.show()

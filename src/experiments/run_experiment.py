@@ -8,7 +8,6 @@ from src.utils.visualization_utils import compare_models_viz
 
 
 def run_model(model, X_train, y_train, X_test, y_test, time):
-
     acc_train = model.score(X_train, y_train)
     acc_test = model.score(X_test, y_test)
 
@@ -45,12 +44,13 @@ def get_trained_mlp(cfg, X_train, y_train):
     )
 
     trainer = MLPTrainer(
-            mlp,
-            lr=cfg.mlp.lr,
-            epochs=cfg.mlp.epochs
+        mlp,
+        lr=cfg.mlp.lr,
+        epochs=cfg.mlp.epochs
     )
 
     return train()
+
 
 def get_trained_hybrid(cfg, X_train, y_train, mlp, time_from_mlp):
     @timer
@@ -65,6 +65,7 @@ def get_trained_hybrid(cfg, X_train, y_train, mlp, time_from_mlp):
     model, time = train()
 
     return model, time + time_from_mlp
+
 
 def run_single_experiment(cfg):
     X_train, X_val, X_test, y_train, y_val, y_test = load_dataset(cfg)
@@ -110,9 +111,11 @@ def run_single_experiment(cfg):
 
 
 def run_experiment_avg(cfg):
+    acc_train = {"tree": [], "mlp": [], "hybrid": []}
     acc_test = {"tree": [], "mlp": [], "hybrid": []}
     gap = {"tree": [], "mlp": [], "hybrid": []}
     time = {"tree": [], "mlp": [], "hybrid": []}
+
     loss_history = []
 
     for i in range(cfg.n_runs):
@@ -126,6 +129,7 @@ def run_experiment_avg(cfg):
 
         for m in acc_test:
             acc_test[m].append(res["results"][m]["acc_test"])
+            acc_train[m].append(res["results"][m]["acc_train"])
             gap[m].append(res["results"][m]["gap"])
             time[m].append(res["results"][m]["time"])
 
@@ -133,6 +137,8 @@ def run_experiment_avg(cfg):
         m: {
             "acc_test_mean": float(np.mean(acc_test[m])),
             "acc_test_std": float(np.std(acc_test[m])),
+            "acc_train_mean": float(np.mean(acc_train[m])),
+            "acc_train_std": float(np.std(acc_train[m])),
             "gap_mean": float(np.mean(gap[m])),
             "gap_std": float(np.std(gap[m])),
             "time_mean": float(np.mean(time[m]))
