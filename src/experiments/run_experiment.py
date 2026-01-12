@@ -34,7 +34,7 @@ def get_trained_tree(cfg, X_train, y_train):
 def get_trained_mlp(cfg, X_train, y_train):
     @timer
     def train():
-        return trainer.fit(X_train, y_train)
+        return [trainer.fit(X_train, y_train), trainer.loss_history]
 
     mlp = MLP(
         input_dim=X_train.shape[1],
@@ -66,17 +66,16 @@ def get_trained_hybrid(cfg, X_train, y_train, mlp, time_from_mlp):
 
     return model, time + time_from_mlp
 
-
-def run_single_experiment(cfg, do_plots=False):
+def run_single_experiment(cfg):
     X_train, X_val, X_test, y_train, y_val, y_test = load_dataset(cfg)
 
     tree_results = get_trained_tree(cfg, X_train, y_train)
-    mlp_results = get_trained_mlp(cfg, X_train, y_train)
-    hybrid_results = get_trained_hybrid(cfg, X_train, y_train, *mlp_results)
+    (mlp_results, mlp_loss), mlp_time = get_trained_mlp(cfg, X_train, y_train)
+    hybrid_results = get_trained_hybrid(cfg, X_train, y_train, mlp_results, mlp_time)
 
     models = {
         "tree": tree_results,
-        "mlp": mlp_results,
+        "mlp": (mlp_results, mlp_loss),
         "hybrid": hybrid_results
 
     }
@@ -102,31 +101,28 @@ def run_single_experiment(cfg, do_plots=False):
         }
         trained_models[name] = res["model"]
 
-    if do_plots:
-        compare_models_viz(
-            X_test, y_test,
-            trained_models["tree"],
-            trained_models["mlp"],
-            trained_models["hybrid"]
-        )
-
     return {
         "experiment": cfg.name,
         "dataset": cfg.dataset_name,
-        "results": results
+        "results": results,
+        "loss_history": mlp_loss
     }
 
 
-def run_experiment_avg(cfg, do_plots=False):
+def run_experiment_avg(cfg):
     acc_test = {"tree": [], "mlp": [], "hybrid": []}
     gap = {"tree": [], "mlp": [], "hybrid": []}
     time = {"tree": [], "mlp": [], "hybrid": []}
+    loss_history = []
 
     for i in range(cfg.n_runs):
         cfg_i = deepcopy(cfg)
         cfg_i.random_state = cfg.random_state + i
 
-        res = run_single_experiment(cfg_i, do_plots=do_plots)
+        res = run_single_experiment(cfg_i)
+
+        if i == 0:
+            loss_history = res["loss_history"]
 
         for m in acc_test:
             acc_test[m].append(res["results"][m]["acc_test"])
@@ -148,5 +144,6 @@ def run_experiment_avg(cfg, do_plots=False):
         "experiment": cfg.name,
         "dataset": cfg.dataset_name,
         "n_runs": cfg.n_runs,
-        "results": summary
+        "results": summary,
+        "loss_history": loss_history
     }

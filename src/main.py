@@ -4,12 +4,14 @@ from src.utils.visualization_utils import (
     print_table,
     plot_accuracy_bar,
     plot_accuracy_vs_time_all,
-    plot_accuracy_across_datasets
+    plot_accuracy_across_datasets,
+    plot_experiments_loss
 )
 
 
 def main():
     results = []
+    loss_data = {}
 
     print("=" * 70)
     print("STARTING EXPERIMENTS")
@@ -18,11 +20,11 @@ def main():
     for cfg in EXPERIMENTS:
         print(f"\nRunning experiment: {cfg.name}")
 
-        res = run_experiment_avg(cfg, do_plots=False)
+        res = run_experiment_avg(cfg)
 
-        # -------------------------
-        # OVERFITTING CHECK
-        # -------------------------
+        if "loss_history" in res:
+            loss_data[cfg.name] = res["loss_history"]
+
         tree = res["results"]["tree"]
         hybrid = res["results"]["hybrid"]
 
@@ -47,14 +49,15 @@ def main():
         else:
             print("→ Difference small / within variability")
 
-
         plot_accuracy_bar(res)
 
         results.append(res)
 
+    print("\nPlotting Loss Curves...")
+    plot_experiments_loss(loss_data)
+
     plot_accuracy_vs_time_all(results)
     plot_accuracy_across_datasets(results)
-
 
     labels = []
     accuracies = []

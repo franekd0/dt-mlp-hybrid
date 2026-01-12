@@ -22,12 +22,14 @@ class MLPTrainer:
             lr=self.lr,
             weight_decay=1e-4
         )
+        self.loss_history = []
 
     def fit(self, X, y):
         X_t = torch.FloatTensor(X)
         y_t = torch.LongTensor(y)
 
         self.model.train()
+        self.loss_history = []
 
         for _ in range(self.epochs):
             self.optimizer.zero_grad()
@@ -37,4 +39,5 @@ class MLPTrainer:
 
             loss.backward()
             self.optimizer.step()
+            self.loss_history.append(loss.item())
         return self.model
