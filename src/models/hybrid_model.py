@@ -43,7 +43,8 @@ class HybridModel:
 
         self.tree = DecisionTreeModel(
             max_depth=self.tree_max_depth,
-            random_state=self.random_state
+            random_state=self.random_state,
+            min_impurity_decrease=0.2,
         )
 
         self.tree.fit(self.transform(X), y)

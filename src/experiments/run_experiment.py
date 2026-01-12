@@ -7,7 +7,7 @@ from src.experiments.dataset_factory import load_dataset
 from src.utils.visualization_utils import compare_models_viz
 
 
-def run_model(model, X_train, y_train, X_test, y_test, time):
+def run_model(model, X_train, y_train, X_test, y_test):
     acc_train = model.score(X_train, y_train)
     acc_test = model.score(X_test, y_test)
 
@@ -15,7 +15,6 @@ def run_model(model, X_train, y_train, X_test, y_test, time):
         "acc_train": acc_train,
         "acc_test": acc_test,
         "gap": acc_train - acc_test,
-        "time": time,
         "model": model,
     }
 
@@ -91,14 +90,13 @@ def run_single_experiment(cfg):
             y_train=y_train,
             X_test=X_test,
             y_test=y_test,
-            time=time
         )
 
         results[name] = {
             "acc_train": res["acc_train"],
             "acc_test": res["acc_test"],
             "gap": res["gap"],
-            "time": res["time"]
+            "time": time
         }
         trained_models[name] = res["model"]
 
