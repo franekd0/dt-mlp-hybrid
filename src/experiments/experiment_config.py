@@ -3,6 +3,7 @@ from typing import Optional
 
 @dataclass
 class TreeConfig:
+    type: str = "decision_tree"
     max_depth: int = 8
 
 @dataclass
@@ -16,12 +17,8 @@ class MLPConfig:
 
 @dataclass
 class HybridConfig:
-    embedding_dim: int = 16
-    hidden_dim: int = 32
-    num_layers: int = 2
+    tree_type: str = "decision_tree"
     tree_max_depth: int = 5
-    epochs: int = 50
-    lr: float = 0.002
 
 @dataclass
 class ExperimentConfig:
@@ -33,9 +30,6 @@ class ExperimentConfig:
     test_size: float = 0.2
     val_size: float = 0.2
     n_samples: Optional[int] = None
-
-    noise: Optional[float] = None
-    factor: Optional[float] = None
 
     tree: TreeConfig = field(default_factory=TreeConfig)
     mlp: MLPConfig = field(default_factory=MLPConfig)

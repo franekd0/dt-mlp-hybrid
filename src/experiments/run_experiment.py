@@ -1,17 +1,13 @@
+from src.models.tree_factory import create_tree
 from src.utils.time_utils import timer
 from copy import deepcopy
 import numpy as np
-from src.models import HybridModel, DecisionTreeModel, MLPTrainer
+from src.models import HybridModel, DecisionTreeModel, MLPTrainer, MLP
 from src.experiments.dataset_factory import load_dataset
 from src.utils.visualization_utils import compare_models_viz
 
 
-def run_model(model, X_train, y_train, X_test, y_test):
-    @timer
-    def train():
-        model.fit(X_train, y_train)
-
-    time = train()[1]
+def run_model(model, X_train, y_train, X_test, y_test, time):
 
     acc_train = model.score(X_train, y_train)
     acc_test = model.score(X_test, y_test)
@@ -21,49 +17,81 @@ def run_model(model, X_train, y_train, X_test, y_test):
         "acc_test": acc_test,
         "gap": acc_train - acc_test,
         "time": time,
-        "model": model
+        "model": model,
     }
+
+
+def get_trained_tree(cfg, X_train, y_train):
+    @timer
+    def train():
+        return tree.fit(X_train, y_train)
+
+    tree = create_tree(cfg)
+
+    return train()
+
+
+def get_trained_mlp(cfg, X_train, y_train):
+    @timer
+    def train():
+        return trainer.fit(X_train, y_train)
+
+    mlp = MLP(
+        input_dim=X_train.shape[1],
+        hidden_dim=cfg.mlp.hidden_dim,
+        embedding_dim=cfg.mlp.embedding_dim,
+        num_layers=cfg.mlp.num_layers,
+        num_classes=len(set(y_train)),
+    )
+
+    trainer = MLPTrainer(
+            mlp,
+            lr=cfg.mlp.lr,
+            epochs=cfg.mlp.epochs
+    )
+
+    return train()
+
+def get_trained_hybrid(cfg, X_train, y_train, mlp, time_from_mlp):
+    @timer
+    def train():
+        return hybrid.fit(X_train, y_train)
+
+    hybrid = HybridModel(
+        tree_max_depth=cfg.hybrid.tree_max_depth,
+        mlp=mlp
+    )
+
+    model, time = train()
+
+    return model, time + time_from_mlp
 
 
 def run_single_experiment(cfg, do_plots=False):
     X_train, X_val, X_test, y_train, y_val, y_test = load_dataset(cfg)
 
-    models = {
-        "tree": DecisionTreeModel(
-            max_depth=cfg.tree.max_depth,
-        ),
-        "mlp": MLPTrainer(
-            input_dim=X_train.shape[1],
-            hidden_dim=cfg.mlp.hidden_dim,
-            embedding_dim=cfg.mlp.embedding_dim,
-            num_layers=cfg.mlp.num_layers,
-            num_classes=len(set(y_train)),
-            lr=cfg.mlp.lr,
-            epochs=cfg.mlp.epochs
+    tree_results = get_trained_tree(cfg, X_train, y_train)
+    mlp_results = get_trained_mlp(cfg, X_train, y_train)
+    hybrid_results = get_trained_hybrid(cfg, X_train, y_train, *mlp_results)
 
-        ),
-        "hybrid": HybridModel(
-            input_dim=X_train.shape[1],
-            num_classes=len(set(y_train)),
-            embedding_dim=cfg.hybrid.embedding_dim,
-            hidden_dim=cfg.hybrid.hidden_dim,
-            num_layers=cfg.hybrid.num_layers,
-            tree_max_depth=cfg.hybrid.tree_max_depth,
-            epochs=cfg.hybrid.epochs,
-            lr=cfg.hybrid.lr,
-        )
+    models = {
+        "tree": tree_results,
+        "mlp": mlp_results,
+        "hybrid": hybrid_results
+
     }
 
     results = {}
     trained_models = {}
 
-    for name, model in models.items():
+    for name, (model, time) in models.items():
         res = run_model(
             model=model,
             X_train=X_train,
             y_train=y_train,
             X_test=X_test,
-            y_test=y_test
+            y_test=y_test,
+            time=time
         )
 
         results[name] = {

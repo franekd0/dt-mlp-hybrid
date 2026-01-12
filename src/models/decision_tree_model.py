@@ -1,8 +1,5 @@
 from sklearn.tree import DecisionTreeClassifier
 
-from src.utils.time_utils import timer
-
-
 class DecisionTreeModel:
     """
     A wrapper for the Decision Tree Classifier from scikit-learn.
@@ -19,6 +16,7 @@ class DecisionTreeModel:
         Fit the Decision Tree model.
         """
         self.model.fit(X, y)
+        return self
 
     def predict(self, X):
         """

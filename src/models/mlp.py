@@ -33,3 +33,5 @@ class MLP(nn.Module):
     def score(self, X_test, y_test):
         y_pred = self.predict(X_test)
         return float((y_pred == y_test).mean())
+
+
