@@ -11,7 +11,7 @@ class MLP(nn.Module):
 
     # Methods eval(), train() and parameters() are inherited from nn.Module
 
-    def forward(self, X):
+    def forward(self, X: np.ndarray):
         """
         Forward pass through the MLP model.
         """
@@ -19,7 +19,7 @@ class MLP(nn.Module):
         logits = self.classifier(embeddings)
         return logits, embeddings
 
-    def predict(self, X):
+    def predict(self, X: np.ndarray):
         """
         Returns class predictions for input data X.
         """

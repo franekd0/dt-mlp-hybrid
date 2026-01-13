@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any
+import numpy as np
 
 class TreeModel(ABC):
     """
@@ -7,21 +7,21 @@ class TreeModel(ABC):
     """
 
     @abstractmethod
-    def fit(self, X: Any, y: Any):
+    def fit(self, X: np.ndarray, y: np.ndarray):
         """
         Fit the tree model.
         """
         pass
 
     @abstractmethod
-    def predict(self, X: Any):
+    def predict(self, X: np.ndarray):
         """
         Predict using the tree model.
         """
         pass
 
     @abstractmethod
-    def score(self, X: Any, y: Any):
+    def score(self, X: np.ndarray, y: np.ndarray):
         """
         Score the tree model.
         """

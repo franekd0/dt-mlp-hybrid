@@ -1,5 +1,5 @@
-from src.experiments.experiments_list import EXPERIMENTS
-from src.experiments.run_experiment import run_experiment_avg
+from src.experiments.experiments_list import EXPERIMENTS, EXPERIMENTS_SWEEPS
+from src.experiments.run_experiment import run_n_experiments
 from src.utils.visualization_utils import (
     print_table,
     plot_accuracy_bar,
@@ -21,7 +21,7 @@ def main():
     for cfg in EXPERIMENTS:
         print(f"\nRunning experiment: {cfg.name}")
 
-        res = run_experiment_avg(cfg)
+        res = run_n_experiments(cfg)
 
         if "loss_data" in res:
             all_loss_data[cfg.name] = res["loss_data"]
@@ -79,5 +79,23 @@ def main():
     print_table(labels, accuracies, times)
 
 
+def test():
+
+    results = run_sweep(EXPERIMENTS_SWEEPS[0])
+    import matplotlib.pyplot as plt
+
+    xs = [results["value"] for r in results]
+    ys = [results["acc_test"] for r in results]
+
+    plt.figure()
+    plt.plot(xs, ys, marker="o")
+    plt.xlabel("Hybrid tree max depth")
+    plt.ylabel("Test accuracy")
+    plt.title("Sweep")
+    plt.grid(True)
+    plt.show()
+
+
 if __name__ == "__main__":
     main()
+    # test()

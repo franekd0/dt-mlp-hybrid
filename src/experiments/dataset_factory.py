@@ -5,10 +5,10 @@ from src.utils import (
     load_heart_statlog_dataset,
 
 )
-from src.experiments.experiment_config import ExperimentConfig
+from src.experiments.experiment_config import ComparisonExperimentConfig
 
 
-def load_dataset(cfg: ExperimentConfig):
+def load_dataset(cfg: ComparisonExperimentConfig):
     if cfg.dataset_name == "wine":
         return load_wine_dataset(
             test_size=cfg.test_size,

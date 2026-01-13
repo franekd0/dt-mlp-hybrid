@@ -7,27 +7,27 @@ class RandomForestModel(TreeModel):
     A wrapper for the Random Forest Classifier from scikit-learn.
     """
 
-    def __init__(self, n_estimators: int = 100, max_depth: int = None, random_state: int = None):
+    def __init__(self, n_estimators: int, max_depth: int, random_state: int):
         self.model = RandomForestClassifier(
             n_estimators=n_estimators,
             max_depth=max_depth,
             random_state=random_state
         )
 
-    def fit(self, X: ndarray, y: ndarray):
+    def fit(self, X, y):
         """
         Fit the Random Forest tree model.
         """
         self.model.fit(X, y)
         return self
 
-    def predict(self, X: ndarray):
+    def predict(self, X):
         """
         Predict using the Random Forest tree model.
         """
         return self.model.predict(X)
 
-    def score(self, X: ndarray, y: ndarray):
+    def score(self, X, y):
         """
         Score the Random Forest tree model.
         """

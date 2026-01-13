@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from typing import List
+import numpy as np
 
 from src.models import MLP
 
@@ -13,18 +15,18 @@ class MLPTrainer:
             lr: float,
             epochs: int,
     ):
-        self.lr = lr
-        self.epochs = int(epochs)
+        self.lr: int = lr
+        self.epochs: int = epochs
         self.model: MLP = model
-        self.criterion = nn.CrossEntropyLoss()
+        self.criterion: nn.Module = nn.CrossEntropyLoss()
         self.optimizer = optim.Adam(
             self.model.parameters(),
             lr=self.lr,
             weight_decay=1e-4
         )
-        self.loss_history = []
+        self.loss_history: List = []
 
-    def fit(self, X, y):
+    def fit(self, X: np.ndarray, y: np.ndarray):
         X_t = torch.FloatTensor(X)
         y_t = torch.LongTensor(y)
 

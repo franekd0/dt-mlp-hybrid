@@ -1,9 +1,8 @@
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Optional, List
 
 @dataclass
 class TreeConfig:
-    type: str = "decision_tree"
     max_depth: int = 8
     n_estimators: int = 10
 
@@ -18,15 +17,14 @@ class MLPConfig:
 
 @dataclass
 class HybridConfig:
-    tree_type: str = "decision_tree"
     tree_max_depth: int = 5
     n_estimators: int = 10
 
 @dataclass
-class ExperimentConfig:
-
+class ComparisonExperimentConfig:
     name: str
     dataset_name: str
+    tree_type: str = 'decision_tree'
     random_state: int = 42
     n_runs: int = 100
 
@@ -37,3 +35,11 @@ class ExperimentConfig:
     tree: TreeConfig = field(default_factory=TreeConfig)
     mlp: MLPConfig = field(default_factory=MLPConfig)
     hybrid: HybridConfig = field(default_factory=HybridConfig)
+
+
+@dataclass
+class SweepSpecConfig:
+    name: str
+    base_config: ComparisonExperimentConfig
+    param_path: str
+    values: List[int]

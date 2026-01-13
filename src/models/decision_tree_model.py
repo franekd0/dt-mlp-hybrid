@@ -1,3 +1,4 @@
+import numpy as np
 from sklearn.tree import DecisionTreeClassifier
 from .tree_model import TreeModel
 
@@ -6,7 +7,7 @@ class DecisionTreeModel(TreeModel):
     A wrapper for the Decision Tree Classifier from scikit-learn.
     """
 
-    def __init__(self, max_depth: int = None, random_state = None, min_impurity_decrease: float = 0.0):
+    def __init__(self, max_depth: int, random_state, min_impurity_decrease: float):
         self.model = DecisionTreeClassifier(
             criterion="entropy",
             min_impurity_decrease=min_impurity_decrease,
