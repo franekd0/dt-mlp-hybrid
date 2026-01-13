@@ -32,8 +32,8 @@ def _get_trained_tree(cfg, X_train, y_train):
 def _get_trained_mlp(cfg, X_train, y_train):
     @timer
     def train():
-        train_mlp(mlp, cfg.mlp.lr, cfg.mlp.epochs, X_train, y_train)
-        return mlp
+        loss_history = train_mlp(mlp, cfg.mlp.lr, cfg.mlp.epochs, X_train, y_train)
+        return mlp, loss_history
 
     mlp = MLP(
         input_dim=X_train.shape[1],
@@ -65,12 +65,12 @@ def _run_experiment(cfg):
     X_train, X_test, y_train, y_test = load_dataset(cfg)
 
     tree_results = _get_trained_tree(cfg, X_train, y_train)
-    mlp_results = _get_trained_mlp(cfg, X_train, y_train)
-    hybrid_results = _get_trained_hybrid(cfg, X_train, y_train, *mlp_results)
+    (mlp, loss_history), mlp_time = _get_trained_mlp(cfg, X_train, y_train)
+    hybrid_results = _get_trained_hybrid(cfg, X_train, y_train, mlp, mlp_time)
 
     models = {
         "tree": tree_results,
-        "mlp": mlp_results,
+        "mlp": (mlp, mlp_time),
         "hybrid": hybrid_results
 
     }
@@ -97,7 +97,7 @@ def _run_experiment(cfg):
     viz_data = {
         "hybrid_model": hybrid_results[0],
         "tree_model": tree_results[0],
-        "mlp_model": mlp_results[0],
+        "mlp_model": mlp,
         "X": X_test,
         "y": y_test
     }
@@ -106,7 +106,8 @@ def _run_experiment(cfg):
         "experiment": cfg.name,
         "dataset": cfg.dataset_name,
         "results": results,
-        "viz_data": viz_data
+        "viz_data": viz_data,
+        "loss_history": loss_history
     }
 
 
@@ -116,13 +117,15 @@ def run_n_experiments(cfg):
     gap = {"tree": [], "mlp": [], "hybrid": []}
     time = {"tree": [], "mlp": [], "hybrid": []}
 
-    loss_history = []
+    loss_histories = []
 
     for i in range(cfg.n_runs):
         cfg_i = deepcopy(cfg)
         cfg_i.random_state = cfg.random_state + i
 
         res = _run_experiment(cfg_i)
+
+        loss_histories.append(res["loss_history"])
 
         if i == 0: viz_data = res["viz_data"]
 
@@ -150,7 +153,8 @@ def run_n_experiments(cfg):
         "dataset": cfg.dataset_name,
         "n_runs": cfg.n_runs,
         "results": summary,
-        "viz_data": viz_data
+        "viz_data": viz_data,
+        "loss_history": loss_histories,
     }
 
 def run_tree_depth_sweep(

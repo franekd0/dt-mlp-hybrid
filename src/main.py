@@ -2,15 +2,7 @@ from src.experiments.experiments_list import EXPERIMENTS
 from src.experiments.run_experiment import run_n_experiments
 
 from src.utils.data import get_columns
-from src.utils.plots import (
-    plot_train_test_comparison,
-    plot_experiments_loss,
-    plot_feature_importance,
-    plot_mlp_embedding_importance,
-    plot_embeddings_pca,
-    visualize_mlp_structure,
-    print_table, plot_embedding_importance_comparison,
-)
+from src.utils.plots import *
 
 
 def analyze_overfitting(tree, hybrid):
@@ -33,7 +25,7 @@ def analyze_overfitting(tree, hybrid):
         print("→ Difference small / within variability")
 
 
-def visualize_experiment(cfg, viz_data):
+def visualize_experiment(cfg, viz_data, loss_data):
     """
     Visual diagnostics for a single experiment:
     - what MLP considers important
@@ -68,6 +60,10 @@ def visualize_experiment(cfg, viz_data):
         title=f"{cfg.name} | Embedding importance: MLP vs Hybrid"
     )
 
+    plot_loss_summary(
+        loss_histories=loss_data,
+        experiment_name=cfg.name
+    )
 
 def collect_table_rows(results):
     labels, accuracies, times = [], [], []
@@ -107,7 +103,7 @@ def main():
         # plot_train_test_comparison(res)
 
         if res.get("viz_data"):
-            visualize_experiment(cfg, res["viz_data"])
+            visualize_experiment(cfg, res["viz_data"], res["loss_history"])
 
     print("\nPlotting Loss Comparison (MLP vs Hybrid)...")
     # plot_experiments_loss(all_loss_data)

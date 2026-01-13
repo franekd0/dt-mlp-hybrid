@@ -3,6 +3,7 @@ from .importance_plots import *
 from .mlp_structure_plot import *
 from .metric_plots import *
 from .reporting import *
+from .loss_plots import *
 
 
 __all__ = [
@@ -19,4 +20,5 @@ __all__ = [
     "plot_experiments_loss",
     "print_table",
     "print_results",
+    "plot_loss_summary"
 ]

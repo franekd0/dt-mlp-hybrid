@@ -25,4 +25,6 @@ def train_mlp(model: MLP, lr: float, epochs: int, X: np.ndarray, y: np.ndarray):
         optimizer.step()
         loss_history.append(loss.item())
 
+    return loss_history
+
 

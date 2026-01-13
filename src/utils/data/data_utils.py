@@ -1,7 +1,7 @@
 from typing import Iterable, Tuple
 import numpy as np
 import pandas as pd
-from sklearn.datasets import load_wine, load_breast_cancer, load_digits
+from sklearn.datasets import load_wine, load_breast_cancer, make_moons
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.model_selection import train_test_split
 
@@ -9,7 +9,6 @@ def get_columns(dataset: str):
     match dataset:
         case "wine": return load_wine().feature_names
         case "cancer": return load_breast_cancer().feature_names
-        case "digits": return load_digits().feature_names
         case _: return None
 
 
@@ -109,14 +108,16 @@ def load_cancer_dataset(test_size: float, random_state: int = 42):
     )
 
 
-def load_digits_dataset(test_size: float, random_state: int = 42):
-    data = load_digits(as_frame=True)
-    df = data.frame
+def load_moons_dataset(test_size: float, random_state: int = 42):
+    X, y = make_moons(n_samples=10000, noise=0.2, random_state=random_state)
+
+    df = pd.DataFrame(X, columns=["x1", "x2"])
+    df["target"] = y
 
     return split_and_preprocess(
         df=df,
         target_col="target",
-        numerical_cols=data.feature_names,
+        numerical_cols=["x1", "x2"],
         categorical_cols=[],
         test_size=test_size,
         random_state=random_state
