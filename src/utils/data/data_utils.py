@@ -1,15 +1,15 @@
 from typing import Iterable, Tuple
 import numpy as np
 import pandas as pd
-from sklearn.datasets import load_wine, load_breast_cancer
-from sklearn.model_selection import train_test_split
+from sklearn.datasets import load_wine, load_breast_cancer, load_digits
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
-
+from sklearn.model_selection import train_test_split
 
 def get_columns(dataset: str):
     match dataset:
         case "wine": return load_wine().feature_names
         case "cancer": return load_breast_cancer().feature_names
+        case "digits": return load_digits().feature_names
         case _: return None
 
 
@@ -97,6 +97,20 @@ def load_wine_dataset(test_size: float, random_state: int = 42):
 
 def load_cancer_dataset(test_size: float, random_state: int = 42):
     data = load_breast_cancer(as_frame=True)
+    df = data.frame
+
+    return split_and_preprocess(
+        df=df,
+        target_col="target",
+        numerical_cols=data.feature_names,
+        categorical_cols=[],
+        test_size=test_size,
+        random_state=random_state
+    )
+
+
+def load_digits_dataset(test_size: float, random_state: int = 42):
+    data = load_digits(as_frame=True)
     df = data.frame
 
     return split_and_preprocess(
