@@ -34,7 +34,7 @@ def plot_feature_importance(model, model_name, feature_names=None):
     if feature_names is not None and len(feature_names) == len(importances):
         labels = [feature_names[i] for i in indices]
     else:
-        labels = [f"Emb {i}" if "Hybrid" in model_name else f"Feat {i}" for i in indices]
+        labels = [f"Emb {i + 1}" if "Hybrid" in model_name else f"Feat {i}" for i in indices]
 
     plt.figure(figsize=(10, 4))
     plt.bar(
@@ -75,10 +75,10 @@ def plot_mlp_feature_importance(model, model_name, feature_names=None):
     indices = np.argsort(importances)[::-1]
     sorted_importances = importances[indices]
 
-    if feature_names and len(feature_names) == len(importances):
+    if len(feature_names) > 0 and len(feature_names) == len(importances):
         labels = [feature_names[i] for i in indices]
     else:
-        labels = [f"Feat {i}" for i in indices]
+        labels = [f"Feat {i + 1}" for i in indices]
 
     plt.figure(figsize=(10, 4))
     plt.bar(
@@ -107,7 +107,7 @@ def plot_mlp_embedding_importance(mlp_model, title):
     # sortowanie malejąco
     indices = np.argsort(importance)[::-1]
     sorted_importance = importance[indices]
-    labels = [f"Emb {i}" for i in indices]
+    labels = [f"Emb {i + 1}" for i in indices]
 
     plt.figure(figsize=(10, 4))
     plt.bar(

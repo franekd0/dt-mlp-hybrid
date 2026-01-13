@@ -5,6 +5,8 @@ class TreeModel(ABC):
     """
     Abstract base class for tree models.
     """
+    def __init__(self, name):
+        self.name = name
 
     @abstractmethod
     def fit(self, X: np.ndarray, y: np.ndarray):
@@ -26,3 +28,6 @@ class TreeModel(ABC):
         Score the tree model.
         """
         pass
+
+    def get_name(self):
+        return self.name

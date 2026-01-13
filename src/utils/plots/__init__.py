@@ -17,7 +17,6 @@ __all__ = [
     "plot_train_test_comparison",
     "plot_accuracy_vs_time_all",
     "plot_accuracy_across_datasets",
-    "plot_experiments_loss",
     "print_table",
     "print_results",
     "plot_loss_summary"

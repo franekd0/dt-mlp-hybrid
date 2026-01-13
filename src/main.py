@@ -35,35 +35,31 @@ def visualize_experiment(cfg, viz_data, loss_data):
 
     feature_names = get_columns(cfg.dataset_name)
 
-    # --------------------------------------------------
-    # 1) MLP: embedding importance (logits perspective)
-    # --------------------------------------------------
-    plot_mlp_embedding_importance(
-        mlp_model=viz_data["mlp_model"],
-        title=f"{cfg.name}"
+    plot_feature_importance(viz_data["tree_model"], viz_data["tree_model"].get_name(), feature_names)
+
+    visualize_mlp_structure(
+        viz_data["mlp_model"],
+        "Hybrid",
+        feature_names=feature_names
     )
 
-    # --------------------------------------------------
-    # 2) Hybrid: embedding usage (tree perspective)
-    # --------------------------------------------------
-    plot_feature_importance(
-        model=viz_data["hybrid_model"],
-        model_name=f"{cfg.name} | Hybrid",
-    )
-
-    # --------------------------------------------------
-    # 3) COMPARISON: MLP vs Hybrid (same embeddings)
-    # --------------------------------------------------
     plot_embedding_importance_comparison(
         mlp_model=viz_data["mlp_model"],
         hybrid_model=viz_data["hybrid_model"],
         title=f"{cfg.name} | Embedding importance: MLP vs Hybrid"
     )
 
+    plot_mlp_feature_importance(
+        model=viz_data["mlp_model"],
+        model_name="MLP",
+        feature_names=feature_names
+    )
+
     plot_loss_summary(
         loss_histories=loss_data,
         experiment_name=cfg.name
     )
+
 
 def collect_table_rows(results):
     labels, accuracies, times = [], [], []
@@ -100,13 +96,10 @@ def main():
             hybrid=res["results"]["hybrid"],
         )
 
-        # plot_train_test_comparison(res)
+        plot_train_test_comparison(res)
 
         if res.get("viz_data"):
             visualize_experiment(cfg, res["viz_data"], res["loss_history"])
-
-    print("\nPlotting Loss Comparison (MLP vs Hybrid)...")
-    # plot_experiments_loss(all_loss_data)
 
     labels, accuracies, times = collect_table_rows(results)
     print_table(labels, accuracies, times)

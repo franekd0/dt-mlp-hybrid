@@ -1,15 +1,19 @@
+import numpy as np
 from sklearn.tree import DecisionTreeClassifier
+from .tree_model import TreeModel
 
-
-class DecisionTreeModel:
+class DecisionTreeModel(TreeModel):
     """
     A wrapper for the Decision Tree Classifier from scikit-learn.
     """
 
-    def __init__(self, max_depth: int = None, random_state = None):
+    def __init__(self, max_depth: int, random_state, min_impurity_decrease: float):
+        super().__init__("Decision Tree")
         self.model = DecisionTreeClassifier(
+            criterion="entropy",
+            min_impurity_decrease=min_impurity_decrease,
             max_depth=max_depth,
-            random_state=random_state
+            random_state=random_state,
         )
 
     def fit(self, X, y):
@@ -17,6 +21,7 @@ class DecisionTreeModel:
         Fit the Decision Tree model.
         """
         self.model.fit(X, y)
+        return self
 
     def predict(self, X):
         """

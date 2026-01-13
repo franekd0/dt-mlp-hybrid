@@ -3,22 +3,22 @@ from src.experiments.experiment_config import ComparisonExperimentConfig, TreeCo
 EXPERIMENTS=[
     ComparisonExperimentConfig(
         name="Heart | Baseline comparison",
-        dataset_name="wine",
+        dataset_name="cancer",
 
         tree=TreeConfig(
-            max_depth=10
+            max_depth=3
         ),
 
         mlp=MLPConfig(
-            embedding_dim=16,
-            hidden_dim=32,
+            embedding_dim=4,
+            hidden_dim=8,
             num_layers=2,
             epochs=60,
             lr=0.002
         ),
 
         hybrid=HybridConfig(
-            tree_max_depth=8
+            tree_max_depth=2
         )
     )
 ]

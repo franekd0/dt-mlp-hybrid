@@ -66,7 +66,7 @@ def visualize_mlp_structure(model, model_name, feature_names=None):
             ax.add_patch(circle)
 
             if l_idx == 0:
-                if feature_names and i < len(feature_names):
+                if len(feature_names) > 0 and i < len(feature_names):
                     plt.text(x - 0.02, y, feature_names[i],
                              ha='right', va='center', fontsize=10, fontweight='bold', color='#333333')
 
@@ -81,6 +81,6 @@ def visualize_mlp_structure(model, model_name, feature_names=None):
                     label = f"Hidden {l_idx}"
                 plt.text(x, -0.05, label, ha='center', fontsize=12, fontweight='bold')
 
-    plt.title(f"Neural Network Architecture: {model_name}\n(Blue: +, Red: -, Thickness: Magnitude)", fontsize=14)
+    plt.title(f"Neural Network Architecture", fontsize=14)
     plt.tight_layout()
     plt.show()

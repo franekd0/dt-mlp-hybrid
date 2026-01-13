@@ -86,26 +86,3 @@ def plot_accuracy_across_datasets(summaries):
     plt.grid(axis="y", linestyle="--", alpha=0.5)
     plt.tight_layout()
     plt.show()
-
-
-def plot_experiments_loss(all_experiments_loss: dict):
-    plt.figure(figsize=(12, 7))
-    colors = plt.cm.tab10(np.linspace(0, 1, len(all_experiments_loss)))
-
-    for idx, (exp_name, losses) in enumerate(all_experiments_loss.items()):
-        color = colors[idx]
-        if "mlp" in losses and losses["mlp"]:
-            plt.plot(losses["mlp"], label=f"{exp_name} | MLP",
-                     color=color, linestyle="-", linewidth=2, alpha=0.9)
-
-        if "hybrid" in losses and losses["hybrid"]:
-            plt.plot(losses["hybrid"], label=f"{exp_name} | Hybrid (Encoder)",
-                     color=color, linestyle="--", linewidth=2, alpha=0.9)
-
-    plt.title("Loss Comparison: Standalone MLP vs Hybrid Internal MLP", fontsize=14)
-    plt.xlabel("Epochs", fontsize=12)
-    plt.ylabel("Loss (CrossEntropy)", fontsize=12)
-    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.1)
-    plt.grid(True, linestyle='--', alpha=0.3)
-    plt.tight_layout()
-    plt.show()

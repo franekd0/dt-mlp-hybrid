@@ -29,15 +29,9 @@ def split_and_preprocess(
     - scaler / encoder fit ONLY on train
     """
 
-    # -------------------------
-    # TARGET
-    # -------------------------
     y = df[target_col].values
     X_df = df.drop(columns=[target_col])
 
-    # -------------------------
-    # SPLIT
-    # -------------------------
     X_train, X_test, y_train, y_test = train_test_split(
         X_df,
         y,
@@ -46,16 +40,10 @@ def split_and_preprocess(
         stratify=y
     )
 
-    # -------------------------
-    # NUMERICAL
-    # -------------------------
     scaler = StandardScaler()
     X_train_num = scaler.fit_transform(X_train[numerical_cols])
     X_test_num  = scaler.transform(X_test[numerical_cols])
 
-    # -------------------------
-    # CATEGORICAL
-    # -------------------------
     if categorical_cols:
         encoder = OneHotEncoder(
             sparse_output=False,
@@ -67,9 +55,6 @@ def split_and_preprocess(
         X_train_cat = np.empty((len(X_train), 0))
         X_test_cat  = np.empty((len(X_test),  0))
 
-    # -------------------------
-    # CONCAT
-    # -------------------------
     X_train_final = np.hstack([X_train_num, X_train_cat])
     X_test_final  = np.hstack([X_test_num,  X_test_cat])
 
@@ -92,7 +77,6 @@ def load_wine_dataset(test_size: float, random_state: int = 42):
         test_size=test_size,
         random_state=random_state
     )
-
 
 def load_cancer_dataset(test_size: float, random_state: int = 42):
     data = load_breast_cancer(as_frame=True)

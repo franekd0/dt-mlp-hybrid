@@ -8,6 +8,7 @@ class RandomForestModel(TreeModel):
     """
 
     def __init__(self, n_estimators: int, max_depth: int, random_state: int):
+        super().__init__("Random Forest")
         self.model = RandomForestClassifier(
             n_estimators=n_estimators,
             max_depth=max_depth,
