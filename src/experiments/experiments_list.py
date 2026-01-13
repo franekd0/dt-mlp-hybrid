@@ -89,7 +89,9 @@ EXPERIMENTS=[
         dataset_name="heart",
 
         tree=TreeConfig(
-            max_depth=6
+            max_depth=6,
+            type="random_forest",
+            n_estimators=10
         ),
 
         mlp=MLPConfig(
@@ -102,6 +104,8 @@ EXPERIMENTS=[
 
         hybrid=HybridConfig(
             tree_max_depth=4,
+            tree_type="random_forest",
+            n_estimators=30
         )
     ),
     ExperimentConfig(

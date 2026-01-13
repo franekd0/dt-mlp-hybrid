@@ -1,13 +1,16 @@
+from typing import Any
+from numpy import ndarray
+
+from src.experiments.experiment_config import ExperimentConfig
 from src.models.tree_factory import create_tree
 from src.utils.time_utils import timer
 from copy import deepcopy
 import numpy as np
-from src.models import HybridModel, DecisionTreeModel, MLPTrainer, MLP
+from src.models import HybridModel, MLPTrainer, MLP
 from src.experiments.dataset_factory import load_dataset
-from src.utils.visualization_utils import compare_models_viz
 
 
-def run_model(model, X_train, y_train, X_test, y_test):
+def run_model(model: Any, X_train: ndarray, y_train: ndarray, X_test: ndarray, y_test: ndarray, time: float):
     acc_train = model.score(X_train, y_train)
     acc_test = model.score(X_test, y_test)
 
@@ -15,21 +18,22 @@ def run_model(model, X_train, y_train, X_test, y_test):
         "acc_train": acc_train,
         "acc_test": acc_test,
         "gap": acc_train - acc_test,
+        "time": time,
         "model": model,
     }
 
 
-def get_trained_tree(cfg, X_train, y_train):
+def get_trained_tree(cfg: ExperimentConfig, X_train: ndarray, y_train: ndarray):
     @timer
     def train():
         return tree.fit(X_train, y_train)
 
-    tree = create_tree(cfg)
+    tree = create_tree(cfg, "tree")
 
     return train()
 
 
-def get_trained_mlp(cfg, X_train, y_train):
+def get_trained_mlp(cfg: ExperimentConfig, X_train: ndarray, y_train: ndarray):
     @timer
     def train():
         return [trainer.fit(X_train, y_train), trainer.loss_history]
@@ -51,14 +55,15 @@ def get_trained_mlp(cfg, X_train, y_train):
     return train()
 
 
-def get_trained_hybrid(cfg, X_train, y_train, mlp, time_from_mlp):
+def get_trained_hybrid(cfg: ExperimentConfig, X_train: ndarray, y_train: ndarray, mlp: MLP, time_from_mlp: float):
     @timer
     def train():
         return hybrid.fit(X_train, y_train)
 
     hybrid = HybridModel(
         tree_max_depth=cfg.hybrid.tree_max_depth,
-        mlp=mlp
+        mlp=mlp,
+        tree_model=create_tree(cfg, "hybrid")
     )
 
     model, time = train()
@@ -66,7 +71,7 @@ def get_trained_hybrid(cfg, X_train, y_train, mlp, time_from_mlp):
     return model, time + time_from_mlp
 
 
-def run_single_experiment(cfg):
+def run_single_experiment(cfg: ExperimentConfig):
     X_train, X_val, X_test, y_train, y_val, y_test = load_dataset(cfg)
 
     tree_results = get_trained_tree(cfg, X_train, y_train)
@@ -90,13 +95,14 @@ def run_single_experiment(cfg):
             y_train=y_train,
             X_test=X_test,
             y_test=y_test,
+            time=time
         )
 
         results[name] = {
             "acc_train": res["acc_train"],
             "acc_test": res["acc_test"],
             "gap": res["gap"],
-            "time": time
+            "time": res["time"]
         }
         trained_models[name] = res["model"]
 
@@ -108,7 +114,7 @@ def run_single_experiment(cfg):
     }
 
 
-def run_experiment_avg(cfg):
+def run_experiment_avg(cfg: ExperimentConfig):
     acc_train = {"tree": [], "mlp": [], "hybrid": []}
     acc_test = {"tree": [], "mlp": [], "hybrid": []}
     gap = {"tree": [], "mlp": [], "hybrid": []}

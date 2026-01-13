@@ -1,6 +1,7 @@
 from sklearn.tree import DecisionTreeClassifier
+from .tree_model import TreeModel
 
-class DecisionTreeModel:
+class DecisionTreeModel(TreeModel):
     """
     A wrapper for the Decision Tree Classifier from scikit-learn.
     """

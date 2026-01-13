@@ -5,6 +5,7 @@ from typing import Optional
 class TreeConfig:
     type: str = "decision_tree"
     max_depth: int = 8
+    n_estimators: int = 10
 
 @dataclass
 class MLPConfig:
@@ -19,9 +20,11 @@ class MLPConfig:
 class HybridConfig:
     tree_type: str = "decision_tree"
     tree_max_depth: int = 5
+    n_estimators: int = 10
 
 @dataclass
 class ExperimentConfig:
+
     name: str
     dataset_name: str
     random_state: int = 42

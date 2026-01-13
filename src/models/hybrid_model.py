@@ -1,8 +1,8 @@
 import torch
 
-from src.models.mlp_trainer import MLPTrainer
 from src.models.mlp import MLP
 from src.models.decision_tree_model import DecisionTreeModel
+from src.models.tree_model import TreeModel
 
 
 class HybridModel:
@@ -13,7 +13,8 @@ class HybridModel:
 
     def __init__(
             self,
-            mlp,
+            tree_model: TreeModel,
+            mlp: MLP,
             tree_max_depth: int = 5,
             random_state: int = 42
     ):
@@ -21,7 +22,7 @@ class HybridModel:
         self.random_state = random_state
 
         self.mlp : MLP = mlp
-        self.tree : DecisionTreeModel | None = None
+        self.tree : TreeModel = tree_model
         self.is_fitted = True
 
 
@@ -41,11 +42,6 @@ class HybridModel:
         4. Trains tree on extracted embeddings.
         """
 
-        self.tree = DecisionTreeModel(
-            max_depth=self.tree_max_depth,
-            random_state=self.random_state,
-            min_impurity_decrease=0.2,
-        )
 
         self.tree.fit(self.transform(X), y)
 
