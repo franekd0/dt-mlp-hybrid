@@ -105,7 +105,7 @@ def plot_experiments_loss(all_experiments_loss: dict):
     plt.title("Loss Comparison: Standalone MLP vs Hybrid Internal MLP", fontsize=14)
     plt.xlabel("Epochs", fontsize=12)
     plt.ylabel("Loss (CrossEntropy)", fontsize=12)
-    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
+    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.1)
     plt.grid(True, linestyle='--', alpha=0.3)
     plt.tight_layout()
     plt.show()

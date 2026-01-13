@@ -1,12 +1,9 @@
-from typing import Any
-from numpy import ndarray
-
-from src.experiments.experiment_config import ComparisonExperimentConfig
 from src.models.tree_factory import create_tree
-from src.utils.time_utils import timer
+from src.trainers.mlp_trainer import train_mlp
+from src.utils.time.time_utils import timer
 from copy import deepcopy
 import numpy as np
-from src.models import HybridModel, MLPTrainer, MLP
+from src.models import HybridModel, MLP
 from src.experiments.dataset_factory import load_dataset
 
 
@@ -35,7 +32,8 @@ def _get_trained_tree(cfg, X_train, y_train):
 def _get_trained_mlp(cfg, X_train, y_train):
     @timer
     def train():
-        return [trainer.fit(X_train, y_train), trainer.loss_history]
+        train_mlp(mlp, cfg.mlp.lr, cfg.mlp.epochs, X_train, y_train)
+        return mlp
 
     mlp = MLP(
         input_dim=X_train.shape[1],
@@ -43,12 +41,6 @@ def _get_trained_mlp(cfg, X_train, y_train):
         embedding_dim=cfg.mlp.embedding_dim,
         num_layers=cfg.mlp.num_layers,
         num_classes=len(set(y_train)),
-    )
-
-    trainer = MLPTrainer(
-        mlp,
-        lr=cfg.mlp.lr,
-        epochs=cfg.mlp.epochs
     )
 
     return train()
@@ -60,7 +52,6 @@ def _get_trained_hybrid(cfg, X_train, y_train, mlp, time_from_mlp):
         return hybrid.fit(X_train, y_train)
 
     hybrid = HybridModel(
-        tree_max_depth=cfg.hybrid.tree_max_depth,
         mlp=mlp,
         tree_model=create_tree(cfg, for_hybrid=True),
     )
@@ -71,15 +62,15 @@ def _get_trained_hybrid(cfg, X_train, y_train, mlp, time_from_mlp):
 
 
 def _run_experiment(cfg):
-    X_train, X_val, X_test, y_train, y_val, y_test = load_dataset(cfg)
+    X_train, X_test, y_train, y_test = load_dataset(cfg)
 
     tree_results = _get_trained_tree(cfg, X_train, y_train)
-    (mlp_results, mlp_loss), mlp_time = _get_trained_mlp(cfg, X_train, y_train)
-    hybrid_results = _get_trained_hybrid(cfg, X_train, y_train, mlp_results, mlp_time)
+    mlp_results = _get_trained_mlp(cfg, X_train, y_train)
+    hybrid_results = _get_trained_hybrid(cfg, X_train, y_train, *mlp_results)
 
     models = {
         "tree": tree_results,
-        "mlp": (mlp_results, mlp_loss),
+        "mlp": mlp_results,
         "hybrid": hybrid_results
 
     }
@@ -102,13 +93,20 @@ def _run_experiment(cfg):
             "gap": res["gap"],
             "time": time
         }
-        trained_models[name] = res["model"]
+
+    viz_data = {
+        "hybrid_model": hybrid_results[0],
+        "tree_model": tree_results[0],
+        "mlp_model": mlp_results[0],
+        "X": X_test,
+        "y": y_test
+    }
 
     return {
         "experiment": cfg.name,
         "dataset": cfg.dataset_name,
         "results": results,
-        "loss_history": mlp_loss
+        "viz_data": viz_data
     }
 
 
@@ -126,8 +124,7 @@ def run_n_experiments(cfg):
 
         res = _run_experiment(cfg_i)
 
-        if i == 0:
-            loss_history = res["loss_history"]
+        if i == 0: viz_data = res["viz_data"]
 
         for m in acc_test:
             acc_test[m].append(res["results"][m]["acc_test"])
@@ -153,7 +150,7 @@ def run_n_experiments(cfg):
         "dataset": cfg.dataset_name,
         "n_runs": cfg.n_runs,
         "results": summary,
-        "loss_history": loss_history
+        "viz_data": viz_data
     }
 
 def run_tree_depth_sweep(
@@ -181,15 +178,19 @@ def run_tree_depth_sweep(
         cfg = deepcopy(base_cfg)
         cfg.hybrid.tree_max_depth = depth
 
+        tree = create_tree(cfg, for_hybrid=True)
         hybrid = HybridModel(
-            tree_max_depth=cfg.hybrid.tree_max_depth,
-            mlp=mlp
+            mlp=mlp,
+            tree_model=tree,
         )
 
         hybrid.fit(X_train, y_train)
 
         acc_train = hybrid.score(X_train, y_train)
         acc_test = hybrid.score(X_test, y_test)
+        y_pred = hybrid.predict(X_test)
+        errors = (y_pred != y_test).sum()
+        print(f"depth={depth} | errors={errors}/{len(y_train)} | acc={hybrid.score(X_test, y_test)}")
 
         results.append({
             "tree_depth": depth,

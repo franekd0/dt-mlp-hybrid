@@ -10,8 +10,7 @@ def create_tree(cfg: ComparisonExperimentConfig, for_hybrid: bool) -> TreeModel:
         return DecisionTreeModel(
             max_depth=tree_depth,
             random_state=cfg.random_state,
-            min_impurity_decrease=0.2 if for_hybrid else 0.0,
-
+            min_impurity_decrease=0.0 if for_hybrid else 0.0,
         )
 
     if cfg.tree_type == "random_forest":

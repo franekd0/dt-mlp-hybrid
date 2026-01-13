@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from src.utils.data_utils import (
+from src.utils.data.data_utils import (
     _split_and_scale,
     load_moons_dataset,
     load_wine_dataset

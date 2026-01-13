@@ -19,6 +19,7 @@ class MLPConfig:
 class HybridConfig:
     tree_max_depth: int = 5
     n_estimators: int = 10
+    random_state: int = 42
 
 @dataclass
 class ComparisonExperimentConfig:

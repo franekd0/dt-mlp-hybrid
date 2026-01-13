@@ -15,31 +15,29 @@ class HybridModel:
             self,
             tree_model: TreeModel,
             mlp: MLP,
-            tree_max_depth: int,
             random_state: int = 42
     ):
-        self.tree_max_depth = tree_max_depth
         self.random_state = random_state
 
-        self.mlp : MLP = mlp
+        self.mlp_trained : MLP = mlp
         self.tree : TreeModel = tree_model
 
 
     def _get_embeddings(self, X: np.ndarray):
-        self.mlp.eval()
+        self.mlp_trained.eval()
         with torch.no_grad():
             X_t = torch.FloatTensor(X)
-            _, embeddings = self.mlp(X_t)
+            _, embeddings = self.mlp_trained(X_t)
         return embeddings.cpu().numpy()
 
     def fit(self, X: np.ndarray, y: np.ndarray):
         """
-        Main learning method:
-        1. Initialize MLP.
-        2. Train MLP with raw data.
-        3. Extracts embeddings.
-        4. Trains tree on extracted embeddings.
+        Hybrid learning:
+        1. Uses a pre-trained MLP as a fixed feature extractor.
+        2. Extracts embeddings from raw input data.
+        3. Trains a decision tree on the extracted embeddings.
         """
+
         self.tree.fit(self.transform(X), y)
         return self
 
