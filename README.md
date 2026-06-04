@@ -1,125 +1,196 @@
-# MLP–Tree Hybrid Classifier
+# MLP-Tree Hybrid Classifier
 
-This project implements an innovative hybrid model for tabular data classification, combining nonlinear feature extraction performed by a neural network with the efficiency and interpretability of decision trees.
+This repository experiments with a hybrid classifier for tabular data. It compares three approaches:
 
-## 🚀 Project Overview
-The core idea of the system is to use an **MLP (Multi-Layer Perceptron)** as an encoder that learns an optimal data representation (embeddings). A **decision tree** is then trained on these extracted features, resulting in a model that combines the strengths of deep learning with the interpretability of tree-based structures.
+- a tree model trained directly on the original features,
+- an MLP classifier trained on the original features,
+- a hybrid model that trains a tree on embeddings produced by a trained MLP encoder.
 
-### Key Features
-- **Hybrid architecture**: Integration of an `MLPEncoder` with a `DecisionTreeClassifier`.
-- **Model comparison**: Tools for comparing the hybrid model against a standard MLP and a standalone decision tree.
-- **Versatility**: Support for various tabular datasets (e.g., Wine, Cancer, Adult, Heart).
-- **Statistical analysis**: Ability to run multiple experimental repetitions to compute mean accuracy and standard deviation.
+The goal is to test whether a neural representation can improve tree-based classification while still keeping the final decision stage simple and inspectable.
 
-## 🏗️ Detailed System Architecture
+## Project Structure
 
-### 1. MLP Model (Classifier)
-The `MLP` class represents a full neural network used for pre-training data representations. It consists of an encoder (`MLPEncoder`) and a classification head (`classifier`). The `forward` method returns both classification logits and learned embeddings.
-
-```python
-# src/models/mlp.py
-
-class MLP(nn.Module):
-    def __init__(self, input_dim, hidden_dim, embedding_dim, num_layers, num_classes):
-        super(MLP, self).__init__()
-        self.encoder = MLPEncoder(input_dim, hidden_dim, embedding_dim, num_layers)
-        self.classifier = nn.Linear(embedding_dim, num_classes)
-
-    def forward(self, X):
-        embeddings = self.encoder(X)
-        logits = self.classifier(embeddings)
-        return logits, embeddings
-
-    def predict(self, X):
-        self.eval()
-        with torch.no_grad():
-            X_t = torch.FloatTensor(X)
-            logits, _ = self(X_t)
-            preds = torch.argmax(logits, dim=1)
-        return preds.cpu().numpy()
+```text
+src/
+  main.py                         Experiment entry point
+  experiments/
+    dataset_factory.py            Dataset loading and preprocessing
+    experiment_config.py          Dataclass-based experiment configuration
+    experiments_list.py           Predefined experiment list
+    run_experiment.py             Training, evaluation, and aggregation logic
+  models/
+    decision_tree_model.py        Decision tree wrapper
+    random_forest_model.py        Random forest wrapper
+    tree_factory.py               Tree model factory
+    mlp_encoder.py                MLP encoder network
+    mlp.py                        MLP classifier
+    hybrid_model.py               MLP-embedding plus tree classifier
+  trainers/
+    mlp_trainer.py                MLP training helper
+  utils/
+    data/                         Dataset split and preprocessing utilities
+    plots/                        Reporting and visualization helpers
+    analysis/                     Embedding analysis helpers
+    time/                         Timing utilities
 ```
 
-### 2. Decision Tree Model (Wrapper)
-The `DecisionTreeModel` class wraps scikit-learn’s `DecisionTreeClassifier` to unify the interface with the neural models.
+## Model Design
 
-```python
-# src/models/decision_tree_model.py
+The project uses a two-stage comparison setup.
 
-class DecisionTreeModel:
-    def __init__(self, max_depth=None, random_state=None):
-        self.model = DecisionTreeClassifier(
-            max_depth=max_depth,
-            random_state=random_state
-        )
+### Tree baseline
 
-    def fit(self, X, y):
-        self.model.fit(X, y)
+The tree baseline trains either a decision tree or a random forest directly on preprocessed tabular features. The selected tree implementation is controlled by `tree_type` in the experiment configuration.
 
-    def predict(self, X):
-        return self.model.predict(X)
+Supported values:
 
-    def score(self, X, y):
-        return self.model.score(X, y)
+- `decision_tree`
+- `random_forest`
+
+### MLP baseline
+
+The MLP baseline trains a neural classifier with an encoder and a linear classification head. The encoder produces a fixed-size embedding, and the classifier head maps that embedding to class logits.
+
+Key MLP parameters:
+
+- `hidden_dim`
+- `embedding_dim`
+- `num_layers`
+- `epochs`
+- `lr`
+
+### Hybrid model
+
+The hybrid model reuses the trained MLP as a feature extractor. It transforms each input row into an embedding, then trains a tree model on those embeddings.
+
+In code, the pipeline is:
+
+1. Train the MLP classifier.
+2. Extract embeddings from the trained MLP encoder.
+3. Train the tree model on the extracted embeddings.
+4. Evaluate train accuracy, test accuracy, generalization gap, and training time.
+
+## Supported Datasets
+
+Datasets are selected with `dataset_name` in `ComparisonExperimentConfig`.
+
+Currently supported:
+
+- `wine`
+- `cancer`
+- `moons`
+
+The `wine` and `cancer` datasets come from `sklearn.datasets`. The `moons` dataset is generated with `sklearn.datasets.make_moons`.
+
+## Setup
+
+Create and activate a virtual environment, then install the dependencies:
+
+```bash
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
 ```
 
-### 3. Hybrid Model
-The `HybridModel` combines neural feature learning with tree-based classification.
+On Unix-like shells, activate the environment with:
 
-```python
-# src/models/hybrid_model.py
-
-class HybridModel:
-    def fit(self, X, y):
-        self._set_mlp()
-        trainer = MLPTrainer(self.lr, self.epochs)
-        trainer.set_model(self.mlp)
-        trainer.fit(X, y)
-
-        X_emb = self._get_embeddings(X)
-
-        self.tree = DecisionTreeModel(
-            max_depth=self.tree_max_depth,
-            random_state=self.random_state
-        )
-        self.tree.fit(X_emb, y)
-
-        self.is_fitted = True
-        return self
-
-    def predict(self, X):
-        if not self.is_fitted:
-            raise Exception("Train model first")
-        X_emb = self._get_embeddings(X)
-        return self.tree.predict(X_emb)
-
-    def _get_embeddings(self, X):
-        self.mlp.eval()
-        with torch.no_grad():
-            X_t = torch.FloatTensor(X)
-            _, embeddings = self.mlp(X_t)
-        return embeddings.cpu().numpy()
+```bash
+source .venv/bin/activate
 ```
 
-## 📂 File Structure
-| File | Description |
-|------|-------------|
-| `hybrid_model.py` | Hybrid model orchestration |
-| `mlp_encoder.py` | Neural encoder definition |
-| `mlp.py` | MLP with classifier head |
-| `MLPTrainer.py` | Neural network training logic |
-| `decision_tree_model.py` | Decision tree wrapper |
-| `dataset_factory.py` | Dataset loading utilities |
-| `run_experiment.py` | Experiment runner |
-| `experiment_config.py` | Hyperparameter configuration |
-| `experiments_list.py` | Predefined experiments |
+## Running Experiments
 
-## 📊 Research Methodology
-Each experiment reports:
-- Training and test accuracy
-- Generalization gap
-- Training time
+Run the configured experiments from the repository root:
 
-## 🛠️ Usage
-1. Define experiments in `experiments_list.py`.
-2. Run `run_experiment_avg(cfg)` to obtain averaged metrics.
-3. Optionally enable plots with `do_plots=True`.
+```bash
+python -m src.main
+```
+
+The entry point loads `EXPERIMENTS` from `src/experiments/experiments_list.py` and runs each configuration with `run_n_experiments`.
+
+## Configuring Experiments
+
+Edit `src/experiments/experiments_list.py` to change the experiment list.
+
+Example:
+
+```python
+from src.experiments.experiment_config import (
+    ComparisonExperimentConfig,
+    TreeConfig,
+    MLPConfig,
+    HybridConfig,
+)
+
+EXPERIMENTS = [
+    ComparisonExperimentConfig(
+        name="Cancer | Baseline comparison",
+        dataset_name="cancer",
+        tree_type="decision_tree",
+        n_runs=100,
+        tree=TreeConfig(max_depth=3),
+        mlp=MLPConfig(
+            embedding_dim=4,
+            hidden_dim=8,
+            num_layers=2,
+            epochs=60,
+            lr=0.002,
+        ),
+        hybrid=HybridConfig(tree_max_depth=2),
+    )
+]
+```
+
+Important configuration fields:
+
+| Field | Purpose |
+| --- | --- |
+| `name` | Human-readable experiment name |
+| `dataset_name` | Dataset key: `wine`, `cancer`, or `moons` |
+| `tree_type` | Tree backend: `decision_tree` or `random_forest` |
+| `n_runs` | Number of repeated runs used for summary statistics |
+| `test_size` | Test split fraction |
+| `random_state` | Base random seed |
+| `tree.max_depth` | Depth for the raw-feature tree baseline |
+| `tree.n_estimators` | Number of estimators for random forest |
+| `mlp.*` | MLP architecture and training parameters |
+| `hybrid.tree_max_depth` | Depth for the tree trained on MLP embeddings |
+
+## Reported Metrics
+
+Each experiment reports summary statistics for:
+
+- training accuracy,
+- test accuracy,
+- generalization gap,
+- training time.
+
+For repeated runs, the runner computes means and standard deviations across runs.
+
+The main script also performs an overfitting comparison between the raw tree and the hybrid model by comparing their train-test gaps.
+
+## Visualizations
+
+The plotting utilities can generate diagnostics for:
+
+- train/test accuracy comparison,
+- feature importance for tree models,
+- MLP structure and feature influence,
+- embedding importance comparison between the MLP and hybrid model,
+- MLP loss curves across runs.
+
+These plots are produced from `src/main.py` when visualization data is available.
+
+## Extending the Project
+
+To add a new dataset:
+
+1. Add a loader function in `src/utils/data/data_utils.py`.
+2. Register the dataset key in `src/experiments/dataset_factory.py`.
+3. Add feature names to `get_columns` if plots should show named features.
+
+To add a new tree model:
+
+1. Implement the `TreeModel` interface in `src/models/`.
+2. Register the model in `src/models/tree_factory.py`.
+3. Add a new `tree_type` value in experiment configurations.
